@@ -66,14 +66,15 @@ class Game:
 
     def remake_map(self):
         random.seed(self.map_seed or datetime.now())
-        self.dungeon_generator.clear_map()
+        # self.dungeon_generator.clear_map()
         # self.dungeon_generator.initialize_map()
         # self.dungeon_generator.place_random_rooms(
         #     min_room_size=const.MAP_SETTINGS["min_room_size"],
         #     max_room_size=const.MAP_SETTINGS["max_room_size"]
         # )
         # self.dungeon_generator.build_corridors()
-
+        self.dungeon_generator = DungeonGenerator(const.MAP_SETTINGS)
+        self.dungeon_generator.initialize_map()
         self.dungeon_generator.build_dungeon()
 
         # self.dungeon_generator.dungeon.place(Point(1, 1), Tile.from_label(Point(1, 1), TileType.WALL),

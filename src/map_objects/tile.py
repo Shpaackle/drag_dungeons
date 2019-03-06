@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict
 
+import const
 from map_objects.point import Point
 
 
@@ -10,7 +11,8 @@ class TileType(Enum):
     WALL = 0
     FLOOR = 1
     CORRIDOR = 2
-    DOOR = 3
+    DOOR_CLOSED = 3
+    DOOR_OPEN = 4
 
     CONNECTION = 100
 
@@ -47,12 +49,14 @@ class Tile:
         blocked: bool = True,
         blocks_sight: bool = True,
         passable: bool = False,
+        ch: str = const.Tiles.UNSEEN
     ):
         self.position: Point = Point(x, y)
         self.label: TileType = label
         self.blocked: bool = blocked
         self.blocks_sight: bool = blocks_sight
         self.passable: bool = passable
+        self.ch: str = ch
 
     def __str__(self):
         return f"{self.label.name} {self.position}"
@@ -84,7 +88,8 @@ class Tile:
             TileType.FLOOR: Tile.floor(point),
             TileType.WALL: Tile.wall(point),
             TileType.CORRIDOR: Tile.corridor(point),
-            TileType.DOOR: Tile.door(point)
+            TileType.DOOR_CLOSED: Tile.door(point, opened=False),
+            TileType.DOOR_OPEN: Tile.door(point, opened=True)
         }
 
         tile = labels.get(label, Tile.error(point))
@@ -114,7 +119,7 @@ class Tile:
         :return: returns a tile at x and y of point with the label "FLOOR" and passable
         :rtype: Tile
         """
-        return Tile(point.x, point.y, label=TileType.FLOOR, blocked=False, blocks_sight=False)
+        return Tile(point.x, point.y, label=TileType.FLOOR, blocked=False, blocks_sight=False, ch=const.Tiles.FLOOR)
 
     @classmethod
     def corridor(cls, point):
@@ -125,7 +130,7 @@ class Tile:
         :return: returns a tile at x and y of point with the label "CORRIDOR" and passable
         :rtype: Tile
         """
-        return Tile(point.x, point.y, label=TileType.CORRIDOR, blocked=False, blocks_sight=False)
+        return Tile(point.x, point.y, label=TileType.CORRIDOR, blocked=False, blocks_sight=False, ch=const.Tiles.CORRIDOR)
 
     @classmethod
     def wall(cls, point):
@@ -136,10 +141,10 @@ class Tile:
         :return: returns a tile at x and y of point with the label "WALL" and not passable
         :rtype: Tile
         """
-        return Tile(point.x, point.y, label=TileType.WALL, blocked=True, blocks_sight=True)
+        return Tile(point.x, point.y, label=TileType.WALL, blocked=True, blocks_sight=True, ch=const.Tiles.WALL)
 
     @classmethod
-    def door(cls, point):
+    def door(cls, point, opened=False):
         """
         creates a door Tile that is not passable
         :param point: x- and y-coordinates for the tile
@@ -147,7 +152,10 @@ class Tile:
         :return: returns a tile at x and y of point with the label "DOOR" and not passable
         :rtype Tile
         """
-        return Tile(point.x, point.y, label=TileType.DOOR, passable=False)
+        if opened:
+            return Tile(point.x, point.y, label=TileType.DOOR_OPEN, blocks_sight=False, blocked=False, ch=const.Tiles.DOOR_OPEN)
+        else:
+            return Tile(point.x, point.y, label=TileType.DOOR_CLOSED, blocks_sight=True, blocked=True, ch=const.Tiles.DOOR_CLOSED)
 
     @classmethod
     def error(cls, point):
@@ -155,12 +163,16 @@ class Tile:
 
     @classmethod
     def from_grid(cls, point: Point, grids: Dict[str, int]):
-        tile = Tile(
-            x=point.x,
-            y=point.y,
-            label=TileType(grids["label"]),
-            blocked=grids.get("blocked", True),
-            blocks_sight=grids.get("blocks_sight", True),
-        )
+        # tile = Tile(
+        #     x=point.x,
+        #     y=point.y,
+        #     label=TileType(grids["label"]),
+        #     blocked=grids.get("blocked", True),
+        #     blocks_sight=grids.get("blocks_sight", True),
+        # )
+        label = TileType(grids["label"])
+        tile = Tile.from_label(point, label)
+        tile.blocked = grids.get("blocked", True)
+        tile.blocks_sight = grids.get("blocks_sight", True)
 
         return tile

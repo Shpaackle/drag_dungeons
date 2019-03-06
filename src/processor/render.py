@@ -26,25 +26,28 @@ class RenderProcessor(esper.Processor):
     def render_map(self, game_map):
         if game_map:
             terminal.layer(const.Layers.MAP)
+            terminal.color(terminal.color_from_name("white"))
             for point, tile in game_map:
-                color = terminal.color_from_name("white")
-                ch = const.Tiles.UNSEEN
-                if tile.label == TileType.EMPTY:
-                    color = terminal.color_from_name("black")
-                    # ch = const.Tiles.UNSEEN
-                elif tile.label == TileType.FLOOR:
-                    color = terminal.color_from_name("grey")
-                    ch = const.Tiles.FLOOR
-                elif tile.label == TileType.WALL:
-                    color = terminal.color_from_name("black")
-                    ch = const.Tiles.WALL
-                elif tile.label == TileType.CORRIDOR:
-                    color = terminal.color_from_name("dark_grey")
-                    ch = const.Tiles.CORRIDOR
-                terminal.bkcolor(color)
-                terminal.put(point.x, point.y, ch)
+                # color = terminal.color_from_name("white")
+                # ch = const.Tiles.UNSEEN
+                # if tile.label == TileType.EMPTY:
+                #     color = terminal.color_from_name("black")
+                #     # ch = const.Tiles.UNSEEN
+                # elif tile.label == TileType.FLOOR:
+                #     color = terminal.color_from_name("grey")
+                #     ch = const.Tiles.FLOOR
+                # elif tile.label == TileType.WALL:
+                #     color = terminal.color_from_name("black")
+                #     ch = const.Tiles.WALL
+                # elif tile.label == TileType.CORRIDOR:
+                #     color = terminal.color_from_name("dark_grey")
+                #     ch = const.Tiles.CORRIDOR
+                # terminal.bkcolor(color)
+                #terminal.color(terminal.color_from_name("white"))
+                terminal.put(point.x, point.y, tile.ch)
 
-        terminal.color(terminal.color_from_name("white"))
+        # terminal.put(1, 1, "\uE003")
+        # terminal.color(terminal.color_from_name("white"))
 
     def render_test_map(self, game_map, connections):
         if game_map and connections:

@@ -12,8 +12,8 @@ MAP_HEIGHT = 21
 FONT_PATH = "data/consolas10x10.png"
 
 MAP_SETTINGS = {
-    "map_height": 21,
-    "map_width": 31,
+    "map_height": 31,
+    "map_width": 51,
     "tile_size": 10,
     "num_rooms": 100,
     "min_room_size": 3,
@@ -66,5 +66,6 @@ class Tiles:
     CORRIDOR = "\uE001"
     WALL = "\uE002"
     CONNECT = "\uE003"
-    DOOR = "\u2588"
+    DOOR_CLOSED = "\uE005"
     BLOCK = "\u2588"
+    DOOR_OPEN = "\uE006"

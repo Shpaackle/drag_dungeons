@@ -258,7 +258,9 @@ class DungeonGenerator:
         if not self.can_place(start, last_direction):
             return
         region = self.new_region()
+
         self.place_tile(start, region=region, label=label)
+        self.corridors.append(start)
 
         tiles.append(start)
 
@@ -461,6 +463,8 @@ class DungeonGenerator:
 
         self.connect_regions()
 
+        self.remove_dead_ends()
+
     def find_empty_space(self, distance: int) -> Point:
         for x in range(distance, self.width - distance):
             for y in range(distance, self.height - distance):
@@ -597,54 +601,20 @@ class DungeonGenerator:
         for region in range(self.current_region):
             if region not in self.joined_regions:
                 print(f"region {region} not joined, but why?")
-        # with open("connector_regions.txt", "w") as file:
-        #     for c, r in connector_regions.items():
-        #         file.write(f"Point{c}: {r},\n")
-        #
-        # # self.connections = list(connector_regions.keys())
-        # connectors = list(connector_regions.keys())  # list of connection points
-        #
-        # merged = {region: {region} for region in range(self.current_region + 1)}
-        # # open_regions = {region for region in range(self.current_region + 1)}  # regions to choose from
-        #
-        # # while open_regions:
-        #
-        # # pick random room as dungeon start
-        # start_room: Room = random.choice(self.rooms)
-        # start_region = start_room.region
-        #
-        # # find every connection from start region
-        # # points = [point for point, regions in connector_regions if start_region in regions]
-        # #
-        # # # randomly choose first point for connection
-        # # start_point = random.choice(points)
-        # # # place connection between first and second region
-        # # self.place_connection(start_point, start_region)
-        # #
-        # #
-        # # points.remove(start_point)
-        # # remove_points = []
-        # #
-        # # # iterate through all the connection points
-        # # for point in iter(points):
-        # #     if point in start_point.direct_neighbors:
-        # #         remove_points.append(point)
-        # #         continue
 
     def place_connection(self, point, region):
         if random.randint(1, 4) == 1:
-            label = TileType.FLOOR
+            label = TileType.DOOR_OPEN
         else:
-            label = TileType.DOOR
+            label = TileType.DOOR_CLOSED
         self.place_tile(point, label, region)
 
     def get_unconnected_regions(self, connector_regions):
-        ''' returns a set of unjoined regions '''
+        """ returns a set of unconnected regions """
         regions = set()
         for r1, r2 in connector_regions.values():
             regions.add(r1)
             regions.add(r2)
-
 
         return [region for region in regions if region not in self.joined_regions]
 
@@ -657,3 +627,30 @@ class DungeonGenerator:
         g.kruskal_MST()
         # g.print()
         self.region_graph = g
+
+    def remove_dead_ends(self):
+        dead_ends = self.dead_ends
+        while dead_ends:
+            point = dead_ends.pop(-1)
+            self.place_tile(point, TileType.WALL, -1)
+            self.corridors.remove(point)
+
+            dead_ends = self.dead_ends
+
+    @property
+    def dead_ends(self):
+        dead_ends = []
+        # iterate through corridors
+        for point in self.corridors:
+            walls = 0
+            # print(f"point = {point}")
+            for neighbor in point.direct_neighbors:
+                tile = self.tile(*neighbor)
+                # print(f"{neighbor} is {tile.label}")
+                if tile.label == TileType.WALL:
+                    walls += 1
+            if walls >= 3:
+                # print(f"point {point} added to dead_ends")
+                dead_ends.append(point)
+
+        return dead_ends
