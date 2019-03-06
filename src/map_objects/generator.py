@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import json
 
 from collections import OrderedDict, namedtuple
 from dataclasses import dataclass
@@ -10,6 +11,7 @@ from map_objects.dungeon import Dungeon
 from map_objects.enums import Direction
 from map_objects.point import Point
 from map_objects.tile import Tile, TileType
+from map_objects.kruskal import Graph
 
 
 class Room:
@@ -73,12 +75,17 @@ class DungeonGenerator:
 
         self.rooms: list = []
         self.corridors: list = []
-        self.regions = OrderedDict({"count": 0})
+
+        self.connections = []
 
         self.map_settings = OrderedDict(map_settings)
         self.winding_percent: int = 20
 
         self.seed = None
+
+        self.region_graph = None
+        self.connector_regions = None
+        self.joined_regions = None
 
     def __iter__(self):
         # TODO: replace by property self.tile_map
@@ -203,7 +210,7 @@ class DungeonGenerator:
                 start_point.x, start_point.y, room_width, room_height, margin
             )
 
-    def room_fits(self, room: Room, margin: int) -> bool:
+    def room_fits(self, room: Room, margin: int, simple: bool = False) -> bool:
         """
 
         :param room: 
@@ -242,73 +249,55 @@ class DungeonGenerator:
         :param label:
         :type label: map_objects.tile.TileType
         """
-        # logger.debug("Entered grow_maze")
-        # logger.debug(f"start = {start}, label = {label}")
+
         if label is None:
             label = TileType.CORRIDOR
         tiles = []  # tiles to check
         last_direction = Point(0, 0)
 
-        region = self.new_region()
-        # logger.debug(
-        #     f"calling place_tile(start={start}, region={region}, label={label}"
-        # )
         if not self.can_place(start, last_direction):
             return
+        region = self.new_region()
         self.place_tile(start, region=region, label=label)
 
         tiles.append(start)
-        # logger.debug(f"tiles={tiles}")
+
         while len(tiles) > 0:
-            # logger.debug(f"length of tiles is {len(tiles)}")
-            tile = tiles.pop(-1)  # grab last tile
-            # logger.debug(f"tile = {tile}")
+
+            tile = tiles[-1]  # grab last tile
+
             # see which neighboring tiles can be carved
             open_tiles = []
-            # logger.debug(f"open_tiles={open_tiles}")
-            for d in Direction.cardinal():
-                # logger.debug(f"calling can_place(tile={tile}, d={d})")
-                if self.can_place(tile, d):
-                    # logger.debug("can_place returned True")
-                    open_tiles.append(d)
-                    # logger.debug(f"open_tiles={open_tiles}")
-                # else:
-                    # logger.debug("can_place returned False")
 
-            # logger.debug(f"length of open_tiles is {len(open_tiles)}")
+            for d in Direction.cardinal():
+
+                if self.can_place(tile, d):
+
+                    open_tiles.append(d)
+
             if len(open_tiles) > 0:
 
                 if (
                     last_direction in open_tiles
                     and random.randint(1, 101) > self.winding_percent
                 ):
-                    #logger.debug(f"last_direction {last_direction} in open_tiles ")
+
                     current_direction = last_direction
-                    #logger.debug(f"current_direction = {current_direction}")
+
                 else:
                     # TODO: refactor for random.choice()
-                    # logger.debug(
-                    #     f"last_direction in open_tiles is {last_direction in open_tiles}"
-                    # )
                     current_direction = open_tiles[
                         random.randint(0, len(open_tiles) - 1)
                     ]
-                    # logger.debug(f"current_direction = {current_direction}")
 
                 self.place_tile(tile + current_direction, region=region, label=label)
                 self.corridors.append(tile + current_direction)
-                # self.place_tile(
-                #     tile + current_direction * 2, region=region, label=label
-                # )
-                # self.corridors.append(tile + current_direction * 2)
 
-                tiles.append(tile + current_direction) #  * 2)
+                tiles.append(tile + current_direction)  # * 2)
                 last_direction = current_direction
             else:
-                # end current path
+                tiles.remove(tile)
                 last_direction = None
-        # logger.debug("Exit grow_maze")
-    
 
     def find_neighbors(self, point: Point, neighbors: Direction = None):
         """
@@ -417,27 +406,24 @@ class DungeonGenerator:
         :return: list of potential points the path could move
         :rtype: List[Point]
         """
-        # logger.debug(f"inside possible_moves {pos}")
+
         available_squares = []
         for direction in Direction.cardinal():
-            # logger.debug(f"direction = {direction}")
+
             neighbor = pos + direction
-            # logger.debug(f"neighbor = {neighbor}")
+
             if (
                 neighbor.x < 1
                 or self.width - 2 < neighbor.x
                 or neighbor.y < 1
                 or self.height - 2 < neighbor.y
             ):
-                # logger.debug(f"{neighbor} not in bounds")
+
                 continue
             if self.can_carve(pos, direction):
-                # logger.debug(f"can_carve returned True pos={pos}, direction={direction}")
+
                 available_squares.append(neighbor)
-        # logger.debug(f"available squares:")
-        # for square in available_squares:
-        # logger.debug(f"square={square}")
-        # logger.add("debug.log")
+
         return available_squares
 
     @property
@@ -472,6 +458,8 @@ class DungeonGenerator:
                 if self.dungeon.label(point) != TileType.WALL.value:
                     continue
                 self.grow_maze(point)
+
+        self.connect_regions()
 
     def find_empty_space(self, distance: int) -> Point:
         for x in range(distance, self.width - distance):
@@ -533,23 +521,23 @@ class DungeonGenerator:
 
     # TODO: Refactor get_extents
     def get_extents(self, point: Point, direction: Point):
-            if direction == Point(0, 0):
-                return (point.NW, point.SE)
-            # north
-            elif direction == Point(0, 1):
-                return (point.N.NW, point.NE)
-            # east
-            elif direction == Point(1, 0):
-                return (point.NE, point.E.SE)
-            # west
-            elif direction == Point(-1, 0):
-                return (point.W.NW, point.SW)
-            # south
-            elif direction == Point(0, -1):
-                return (point.SW, point.S.SE)
-            else:
-                # logger.debug(f"Something went wrong: {point}, {direction}")
-                pass
+        if direction == Point(0, 0):
+            return point.NW, point.SE
+        # north
+        elif direction == Point(0, 1):
+            return point.N.NW, point.NE
+        # east
+        elif direction == Point(1, 0):
+            return point.NE, point.E.SE
+        # west
+        elif direction == Point(-1, 0):
+            return point.W.NW, point.SW
+        # south
+        elif direction == Point(0, -1):
+            return point.SW, point.S.SE
+        else:
+            print("get_extents else statement")
+            print(f"Direction not valid: point={point}, direction={direction}")
 
     @logger.catch()
     def place_tile(self, point: Point, label: TileType, region: int):
@@ -563,7 +551,11 @@ class DungeonGenerator:
     def can_place(self, point: Point, direction: Point) -> bool:
         top_left, bottom_right = self.get_extents(point, direction)
 
-        return self.dungeon.in_bounds(top_left) and self.dungeon.in_bounds(bottom_right) and self.are_walls(top_left, bottom_right)
+        return (
+            self.dungeon.in_bounds(top_left)
+            and self.dungeon.in_bounds(bottom_right)
+            and self.are_walls(top_left, bottom_right)
+        )
 
     def are_walls(self, top_left, bottom_right):
         for x in range(top_left.x, bottom_right.x + 1):
@@ -571,3 +563,97 @@ class DungeonGenerator:
                 if self.dungeon.label_grid[x, y] != 0:
                     return False
         return True
+
+    def find_connectors(self):
+        connector_regions = dict()
+        for point, tile in self.tile_map:
+            if tile.label != TileType.WALL:
+                continue
+
+            regions = set()
+
+            for neighbor in [point.N, point.E, point.W, point.S]:
+                if not self.dungeon.in_bounds(neighbor):
+                    continue
+                region = self.dungeon.region(neighbor)
+                if region > -1:
+                    regions.add(region)
+
+            if len(regions) < 2:
+                continue
+
+            connector_regions[point] = regions
+        return connector_regions
+
+    def connect_regions(self):
+        self.connector_regions = self.find_connectors()
+        self.joined_regions = set()
+
+        self.min_spanning_tree()
+        region_tree = self.region_graph.result
+        for point, r1, r2, _ in region_tree:
+            self.place_connection(point, r1)
+            self.joined_regions.add(r2)
+        for region in range(self.current_region):
+            if region not in self.joined_regions:
+                print(f"region {region} not joined, but why?")
+        # with open("connector_regions.txt", "w") as file:
+        #     for c, r in connector_regions.items():
+        #         file.write(f"Point{c}: {r},\n")
+        #
+        # # self.connections = list(connector_regions.keys())
+        # connectors = list(connector_regions.keys())  # list of connection points
+        #
+        # merged = {region: {region} for region in range(self.current_region + 1)}
+        # # open_regions = {region for region in range(self.current_region + 1)}  # regions to choose from
+        #
+        # # while open_regions:
+        #
+        # # pick random room as dungeon start
+        # start_room: Room = random.choice(self.rooms)
+        # start_region = start_room.region
+        #
+        # # find every connection from start region
+        # # points = [point for point, regions in connector_regions if start_region in regions]
+        # #
+        # # # randomly choose first point for connection
+        # # start_point = random.choice(points)
+        # # # place connection between first and second region
+        # # self.place_connection(start_point, start_region)
+        # #
+        # #
+        # # points.remove(start_point)
+        # # remove_points = []
+        # #
+        # # # iterate through all the connection points
+        # # for point in iter(points):
+        # #     if point in start_point.direct_neighbors:
+        # #         remove_points.append(point)
+        # #         continue
+
+    def place_connection(self, point, region):
+        if random.randint(1, 4) == 1:
+            label = TileType.FLOOR
+        else:
+            label = TileType.DOOR
+        self.place_tile(point, label, region)
+
+    def get_unconnected_regions(self, connector_regions):
+        ''' returns a set of unjoined regions '''
+        regions = set()
+        for r1, r2 in connector_regions.values():
+            regions.add(r1)
+            regions.add(r2)
+
+
+        return [region for region in regions if region not in self.joined_regions]
+
+    def min_spanning_tree(self):
+        points = self.connector_regions.copy()
+        v = len(self.get_unconnected_regions(points))
+        g = Graph(v)
+        for point, (r1, r2) in points.items():
+            g.add_edge(point, r1, r2, 1)
+        g.kruskal_MST()
+        # g.print()
+        self.region_graph = g

@@ -15,7 +15,7 @@ from map_objects.tile import Tile, TileType
 class Game:
     action = {}
     game_exit = False
-    map_seed = None #"TEST_MAP"
+    map_seed = "TEST_MAP"  # None #
 
     @classmethod
     def quit_game(cls):
@@ -26,11 +26,7 @@ class Game:
         self.dungeon_generator = DungeonGenerator(const.MAP_SETTINGS)
 
     def on_start(self):
-        processors = (
-            p.MovementProcessor(),
-            p.InputProcessor(),
-            p.RenderProcessor()
-        )
+        processors = (p.MovementProcessor(), p.InputProcessor(), p.RenderProcessor())
 
         for num, proc in enumerate(processors):
             self.world.add_processor(proc, priority=num)
@@ -38,7 +34,9 @@ class Game:
     def on_enter(self):
         random.seed(self.map_seed or datetime.now())
         player = self.world.create_entity()
-        self.world.add_component(player, c.Position(x=const.SCREEN_WIDTH/2, y=const.SCREEN_HEIGHT/2))
+        self.world.add_component(
+            player, c.Position(x=const.SCREEN_WIDTH / 2, y=const.SCREEN_HEIGHT / 2)
+        )
         self.world.add_component(player, c.Velocity())
         self.world.add_component(player, c.TakesInput())
         self.world.add_component(player, c.Renderable())
@@ -55,7 +53,10 @@ class Game:
 
     def on_update(self):
         # print("on_update")
-        self.world.process(game_map=self.dungeon_generator.tile_map)
+        self.world.process(
+            game_map=self.dungeon_generator.tile_map,
+            connections=self.dungeon_generator.connections,
+        )
         generator = self.world.get_component(c.Event)
         for ent, event in generator:
             if event.action.get("exit"):
@@ -94,6 +95,10 @@ def main():
 
 if __name__ == "__main__":
     terminal.open()
-    logger.add("logs/build_maze_{time}.log", level="ERROR", format="{time:HH:mm:ss.SSS} {message}")
+    # logger.add(
+    #     "logs/build_maze_{time}.log",
+    #     level="ERROR",
+    #     format="{time:HH:mm:ss.SSS} {message}",
+    # )
     main()
     terminal.close()

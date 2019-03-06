@@ -6,19 +6,19 @@ TITLE = "Drag Dungeons"
 SCREEN_WIDTH = 80
 SCREEN_HEIGHT = 50
 
-MAP_WIDTH = 80
-MAP_HEIGHT = 43
+MAP_WIDTH = 31
+MAP_HEIGHT = 21
 
 FONT_PATH = "data/consolas10x10.png"
 
 MAP_SETTINGS = {
-    "map_height": 50,
-    "map_width": 100,
+    "map_height": 21,
+    "map_width": 31,
     "tile_size": 10,
     "num_rooms": 100,
-    "min_room_size": 4,
-    "max_room_size": 15,
-    "room_margin": 3,
+    "min_room_size": 3,
+    "max_room_size": 7,
+    "room_margin": 1,
 }
 
 COLORS = {
@@ -66,4 +66,5 @@ class Tiles:
     CORRIDOR = "\uE001"
     WALL = "\uE002"
     CONNECT = "\uE003"
+    DOOR = "\u2588"
     BLOCK = "\u2588"

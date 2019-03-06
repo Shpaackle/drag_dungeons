@@ -1,16 +1,18 @@
 from dataclasses import dataclass
 from enum import Enum
 
-class Direction(Enum):
-    NW = (-1, 1)
-    N = (0, 1)
-    NE = (1, 1)
-    W = (-1, 0)
-    E = (1, 0)
-    SW = (-1, -1)
-    S = (0, -1)
-    SE = (1, -1)
-    ORIGIN = (0, 0)
+
+# TODO: refactor this to class that uses Point?
+# class Direction(Enum):
+#     NW = (-1, 1)
+#     N = (0, 1)
+#     NE = (1, 1)
+#     W = (-1, 0)
+#     E = (1, 0)
+#     SW = (-1, -1)
+#     S = (0, -1)
+#     SE = (1, -1)
+#     ORIGIN = (0, 0)
 
 
 @dataclass(init=True, repr=True, eq=True, order=False, frozen=True)
@@ -79,4 +81,29 @@ class Point:
         return self._direction(Direction.ORIGIN.value)
 
     def _direction(self, point):
-        return Point(self.x + point[0], self.y + point[1])
+        return Point(self.x + point.x, self.y + point.y)
+
+    def distance(self, point):
+        return Point(abs(self.x - point.x), abs(self.y - point.y))
+
+    @property
+    def all_neighbors(self):
+        for direction in [self.N, self.NE, self.E, self.SE, self.S, self.SW, self.W, self.NW]:
+            yield direction
+
+    @property
+    def direct_neighbors(self):
+        for direction in [self.N, self.E, self.S, self.W]:
+            yield direction
+
+
+class Direction(Enum):
+    NW = Point(-1, 1)
+    N = Point(0, 1)
+    NE = Point(1, 1)
+    W = Point(-1, 0)
+    E = Point(1, 0)
+    SW = Point(-1, -1)
+    S = Point(0, -1)
+    SE = Point(1, -1)
+    ORIGIN = Point(0, 0)

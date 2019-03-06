@@ -19,14 +19,13 @@ class RenderProcessor(esper.Processor):
     def process(self, **kwargs):
         self.render_all()
         self.render_map(kwargs.get("game_map"))
+        self.render_test_map(kwargs.get("game_map"), kwargs.get("connections"))
         self.refresh_terminal()
         self.clear_all()
 
     def render_map(self, game_map):
-        testing = False
         if game_map:
-            if testing:
-                return self.render_test_map()
+            terminal.layer(const.Layers.MAP)
             for point, tile in game_map:
                 color = terminal.color_from_name("white")
                 ch = const.Tiles.UNSEEN
@@ -42,15 +41,17 @@ class RenderProcessor(esper.Processor):
                 elif tile.label == TileType.CORRIDOR:
                     color = terminal.color_from_name("dark_grey")
                     ch = const.Tiles.CORRIDOR
-                terminal.layer(const.Layers.MAP)
                 terminal.bkcolor(color)
                 terminal.put(point.x, point.y, ch)
 
         terminal.color(terminal.color_from_name("white"))
-        # terminal.put(10, 10, "\uE003")
 
-    def render_test_map(self):
-        pass
+    def render_test_map(self, game_map, connections):
+        if game_map and connections:
+            terminal.layer(const.Layers.TESTING)
+            for point in connections:
+                terminal.color(terminal.color_from_name("blue"))
+                terminal.put(point.x, point.y, const.Tiles.BLOCK)
 
     def render_all(self):
         generator = self.world.get_components(c.Renderable, c.Position)
