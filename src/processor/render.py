@@ -43,7 +43,7 @@ class RenderProcessor(esper.Processor):
                 #     color = terminal.color_from_name("dark_grey")
                 #     ch = const.Tiles.CORRIDOR
                 # terminal.bkcolor(color)
-                #terminal.color(terminal.color_from_name("white"))
+                # terminal.color(terminal.color_from_name("white"))
                 terminal.put(point.x, point.y, tile.ch)
 
         # terminal.put(1, 1, "\uE003")
