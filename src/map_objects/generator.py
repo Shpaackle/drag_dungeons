@@ -108,17 +108,6 @@ class DungeonGenerator:
         self.current_region += 1
         return self.current_region
 
-    # TODO: remove if not needed
-    # def display(self):
-    #     """
-    #     iterator that begins at bottom left of the dungeon to display properly
-    #     :rtype: List[int, int, Tile]
-    #     """
-    #     for i in range(self.height - 1, 0, -1):
-    #         for j in range(self.width):
-    #             # yield i, j - 1, self.grid[i][j - 1]
-    #             yield j, i, self.dungeon.tile(Point(j, i))
-
     def initialize_map(self):
         for y in self.dungeon.rows:
             for x in self.dungeon.columns:
@@ -449,11 +438,6 @@ class DungeonGenerator:
             max_room_size=self.map_settings["max_room_size"],
         )
 
-        # start_point = self.find_empty_space(3)
-        # while start_point != Point(-1, -1):
-        #     self.build_corridors(start_point)
-        #     start_point = self.find_empty_space(3)
-
         for y in range(1, self.height - 1):
             for x in range(1, self.width - 1):
                 point = Point(x, y)
@@ -478,50 +462,6 @@ class DungeonGenerator:
                     return Point(x, y)
         print("returning no point")
         return Point(-1, -1)
-
-    def build_maze(self, label: TileType = None):
-        """
-        build maze using modified growing tree algorithm
-        :param label:
-        :type label:
-        :return: None
-        """
-        if label is None:
-            label = TileType.CORRIDOR
-
-        tiles = []  # tiles to check
-
-        for y in range(1, self.height, 2):
-            for x in range(1, self.width, 2):
-                point = Point(x, y)
-                if self.dungeon.label(point) != TileType.WALL.value:
-                    continue
-
-                ###############################
-                # maze algorithm
-                ###############################
-
-                self.place_maze(point)
-
-    def place_maze(self, start_point: Point, label: TileType = TileType.CORRIDOR):
-        points_to_check = []  # tiles to check
-        # last_direction = Point(0, 0)
-        region = None
-
-        # place corridor tile at starting point
-        if self.can_place(start_point, Point(0, 0)):
-            region = self.new_region()
-            self.place_tile(start_point, label, region)
-            points_to_check.append(start_point)
-
-        while len(points_to_check) > 0:
-            current_point = points_to_check.pop(-1)  # grab last point added
-
-            # search neighbors for points that can be carved
-            open_points = []
-            for d in Direction.cardinal():
-                if self.can_place(current_point, d):
-                    open_points.append(d)
 
     # TODO: Refactor get_extents
     def get_extents(self, point: Point, direction: Point):
@@ -625,7 +565,6 @@ class DungeonGenerator:
         for point, (r1, r2) in points.items():
             g.add_edge(point, r1, r2, 1)
         g.kruskal_MST()
-        # g.print()
         self.region_graph = g
 
     def remove_dead_ends(self):
@@ -643,14 +582,11 @@ class DungeonGenerator:
         # iterate through corridors
         for point in self.corridors:
             walls = 0
-            # print(f"point = {point}")
             for neighbor in point.direct_neighbors:
                 tile = self.tile(*neighbor)
-                # print(f"{neighbor} is {tile.label}")
                 if tile.label == TileType.WALL:
                     walls += 1
             if walls >= 3:
-                # print(f"point {point} added to dead_ends")
                 dead_ends.append(point)
 
         return dead_ends
