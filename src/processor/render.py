@@ -4,8 +4,6 @@ from bearlibterminal import terminal
 import component as c
 import const
 
-from map_objects.tile import TileType
-
 
 class RenderProcessor(esper.Processor):
     def __init__(self):
@@ -28,26 +26,7 @@ class RenderProcessor(esper.Processor):
             terminal.layer(const.Layers.MAP)
             terminal.color(terminal.color_from_name("white"))
             for point, tile in game_map:
-                # color = terminal.color_from_name("white")
-                # ch = const.Tiles.UNSEEN
-                # if tile.label == TileType.EMPTY:
-                #     color = terminal.color_from_name("black")
-                #     # ch = const.Tiles.UNSEEN
-                # elif tile.label == TileType.FLOOR:
-                #     color = terminal.color_from_name("grey")
-                #     ch = const.Tiles.FLOOR
-                # elif tile.label == TileType.WALL:
-                #     color = terminal.color_from_name("black")
-                #     ch = const.Tiles.WALL
-                # elif tile.label == TileType.CORRIDOR:
-                #     color = terminal.color_from_name("dark_grey")
-                #     ch = const.Tiles.CORRIDOR
-                # terminal.bkcolor(color)
-                #terminal.color(terminal.color_from_name("white"))
                 terminal.put(point.x, point.y, tile.ch)
-
-        # terminal.put(1, 1, "\uE003")
-        # terminal.color(terminal.color_from_name("white"))
 
     def render_test_map(self, game_map, connections):
         if game_map and connections:
