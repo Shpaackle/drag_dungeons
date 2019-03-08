@@ -18,8 +18,8 @@ class Dungeon:
         self.tile_map = numpy.zeros(shape=self.grid_shape, dtype=numpy.int).T
 
         self.label_grid = numpy.zeros(shape=self.grid_shape, dtype=numpy.int).T
-        self.blocked_grid = numpy.ones(shape=self.grid_shape, dtype=numpy.int).T
-        self.blocks_sight_grid = numpy.ones(shape=self.grid_shape, dtype=numpy.int).T
+        self.blocked_grid = numpy.full(shape=self.grid_shape, fill_value=True, dtype=numpy.bool).T
+        self.blocks_sight_grid = numpy.full(shape=self.grid_shape, fill_value=True, dtype=numpy.bool).T
         self.region_grid = numpy.full(
             shape=self.grid_shape, fill_value=-1, dtype=numpy.int
         ).T
@@ -35,10 +35,10 @@ class Dungeon:
         return range(self.width)
 
     def blocked(self, point: Point) -> bool:
-        return self.blocked_grid[point.x, point.y] is 1
+        return self.blocked_grid[point.x, point.y]
 
     def blocks_sight(self, point: Point) -> bool:
-        return self.blocks_sight_grid[point.x, point.y] is 1
+        return self.blocks_sight_grid[point.x, point.y]
 
     def label(self, point: Point) -> int:
         return self.label_grid[point.x, point.y]

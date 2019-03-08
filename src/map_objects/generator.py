@@ -93,6 +93,11 @@ class DungeonGenerator:
             yield x, y, Tile.from_grid(Point(x, y), grids)
 
     @property
+    def game_map(self):
+        for point, grids in self.dungeon:
+            yield point, Tile.from_grid(point, grids)
+
+    @property
     def tile_map(self):
         for point, grids in self.dungeon:
             yield point, Tile.from_grid(point, grids)
@@ -590,3 +595,9 @@ class DungeonGenerator:
                 dead_ends.append(point)
 
         return dead_ends
+
+    def is_blocked(self, point: Point) -> bool:
+        if self.dungeon.blocked(point):
+            return True
+
+        return False

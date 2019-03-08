@@ -49,14 +49,14 @@ class Tile:
         blocked: bool = True,
         blocks_sight: bool = True,
         passable: bool = False,
-        ch: str = const.Tiles.UNSEEN
+        char: str = const.Tiles.BLOCK
     ):
         self.position: Point = Point(x, y)
         self.label: TileType = label
         self.blocked: bool = blocked
         self.blocks_sight: bool = blocks_sight
         self.passable: bool = passable
-        self.ch: str = ch
+        self.char: str = char
 
     def __str__(self):
         return f"{self.label.name} {self.position}"
@@ -119,7 +119,7 @@ class Tile:
         :return: returns a tile at x and y of point with the label "FLOOR" and passable
         :rtype: Tile
         """
-        return Tile(point.x, point.y, label=TileType.FLOOR, blocked=False, blocks_sight=False, ch=const.Tiles.FLOOR)
+        return Tile(point.x, point.y, label=TileType.FLOOR, blocked=False, blocks_sight=False, char=const.Tiles.FLOOR)
 
     @classmethod
     def corridor(cls, point):
@@ -130,7 +130,7 @@ class Tile:
         :return: returns a tile at x and y of point with the label "CORRIDOR" and passable
         :rtype: Tile
         """
-        return Tile(point.x, point.y, label=TileType.CORRIDOR, blocked=False, blocks_sight=False, ch=const.Tiles.CORRIDOR)
+        return Tile(point.x, point.y, label=TileType.CORRIDOR, blocked=False, blocks_sight=False, char=const.Tiles.CORRIDOR)
 
     @classmethod
     def wall(cls, point):
@@ -141,7 +141,7 @@ class Tile:
         :return: returns a tile at x and y of point with the label "WALL" and not passable
         :rtype: Tile
         """
-        return Tile(point.x, point.y, label=TileType.WALL, blocked=True, blocks_sight=True, ch=const.Tiles.WALL)
+        return Tile(point.x, point.y, label=TileType.WALL, blocked=True, blocks_sight=True, char=const.Tiles.WALL)
 
     @classmethod
     def door(cls, point, opened=False):
@@ -153,9 +153,9 @@ class Tile:
         :rtype Tile
         """
         if opened:
-            return Tile(point.x, point.y, label=TileType.DOOR_OPEN, blocks_sight=False, blocked=False, ch=const.Tiles.DOOR_OPEN)
+            return Tile(point.x, point.y, label=TileType.DOOR_OPEN, blocks_sight=False, blocked=False, char=const.Tiles.DOOR_OPEN)
         else:
-            return Tile(point.x, point.y, label=TileType.DOOR_CLOSED, blocks_sight=True, blocked=True, ch=const.Tiles.DOOR_CLOSED)
+            return Tile(point.x, point.y, label=TileType.DOOR_CLOSED, blocks_sight=True, blocked=True, char=const.Tiles.DOOR_CLOSED)
 
     @classmethod
     def error(cls, point):
