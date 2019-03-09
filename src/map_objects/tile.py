@@ -149,7 +149,8 @@ class Tile:
             return Tile(point.x, point.y, label=TileType.DOOR_OPEN, walkable=True, transparent=True,
                         char=const.Tiles.DOOR_OPEN)
         else:
-            return Tile(point.x, point.y, label=TileType.DOOR_CLOSED, walkable=False, transparent=False,
+            # TODO: change walkable for TileType.DOOR_CLOSED to False when doors fully implemented
+            return Tile(point.x, point.y, label=TileType.DOOR_CLOSED, walkable=True, transparent=False,
                         char=const.Tiles.DOOR_CLOSED)
 
     @classmethod
