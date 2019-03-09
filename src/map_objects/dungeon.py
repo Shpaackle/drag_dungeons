@@ -28,11 +28,9 @@ class Dungeon(Map):
 
     def blocked(self, point: Point) -> bool:
         return not self.walkable[point.x, point.y]
-        # return self.blocked_grid[point.x, point.y]
 
     def blocks_sight(self, point: Point) -> bool:
         return self.transparent[point.x, point.y]
-        # return self.blocks_sight_grid[point.x, point.y]
 
     def label(self, point: Point) -> int:
         return self.label_grid[point.x, point.y]
@@ -60,8 +58,6 @@ class Dungeon(Map):
         self.walkable[x, y] = tile.walkable
         self.transparent[x, y] = tile.transparent
         self.region_grid[x, y] = region
-        # self.blocked_grid[x, y] = int(tile.walkable)
-        # self.blocks_sight_grid[x, y] = int(tile.transparent)
 
     def grids(self, point: Point) -> Dict[str, int]:
         grids = dict(
@@ -80,9 +76,6 @@ class Dungeon(Map):
 
     def region(self, point: Point) -> int:
         return self.region_grid[point.x, point.y]
-
-    def set_region(self, point: Point, region: int):
-        self.region_grid[point.x, point.y] = region
 
     def in_bounds(self, pos: Point) -> bool:
         """

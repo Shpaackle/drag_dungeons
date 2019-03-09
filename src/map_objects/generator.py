@@ -93,8 +93,6 @@ class DungeonGenerator:
 
     @property
     def game_map(self):
-        # for point, grids in iter(self.dungeon):
-        #     yield point, Tile.from_grid(point, grids)
         return self.dungeon
 
     @property
@@ -516,7 +514,7 @@ class DungeonGenerator:
 
     def find_connectors(self):
         connector_regions = dict()
-        for point, tile in self.tile_map:
+        for point, tile in self.dungeon:
             if tile.label != TileType.WALL:
                 continue
 
