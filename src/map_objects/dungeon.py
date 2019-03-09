@@ -9,9 +9,9 @@ from map_objects.tile import Tile, TileType
 Grids = Dict[str, int]
 
 
-class Dungeon(Map):
+class GameMap(Map):
     def __init__(self, height: int, width: int):
-        super(Dungeon, self).__init__(width=width, height=height, order="F")
+        super(GameMap, self).__init__(width=width, height=height, order="F")
         self.height: int = height
         self.width: int = width
 

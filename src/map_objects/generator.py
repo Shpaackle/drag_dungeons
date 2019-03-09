@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import List
 from loguru import logger
 
-from map_objects.dungeon import Dungeon
+from map_objects.dungeon import GameMap
 from map_objects.enums import Direction
 from map_objects.point import Point
 from map_objects.tile import Tile, TileType
@@ -69,7 +69,7 @@ class Room:
 class DungeonGenerator:
     def __init__(self, map_settings: dict):
 
-        self.dungeon = Dungeon(height=map_settings["map_height"], width=map_settings["map_width"])
+        self.dungeon = GameMap(height=map_settings["map_height"], width=map_settings["map_width"])
 
         self.current_region: int = -1
 
