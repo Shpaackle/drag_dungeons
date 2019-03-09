@@ -87,11 +87,6 @@ class DungeonGenerator:
         self.connector_regions = None
         self.joined_regions = None
 
-    def __iter__(self):
-        # TODO: replace by property self.tile_map
-        for x, y, grids in self.dungeon.tile_map:
-            yield x, y, Tile.from_grid(Point(x, y), grids)
-
     @property
     def starting_position(self) -> Point:
         return self.rooms[0].top_left
