@@ -18,6 +18,8 @@ class GameMap(Map):
         self.label_grid = numpy.full_like(self.walkable, 0, dtype=numpy.int)
         self.region_grid = numpy.full_like(self.walkable, -1, dtype=numpy.int)
 
+        self.explored_grid = numpy.full_like(self.walkable, False, dtype=numpy.bool)
+
     @property
     def rows(self):
         return range(self.height)
@@ -35,12 +37,16 @@ class GameMap(Map):
     def label(self, point: Point) -> int:
         return self.label_grid[point.x, point.y]
 
+    def explored(self, point: Point) -> bool:
+        return self.explored_grid[point.x, point.y]
+
     def __iter__(self) -> [Point, Dict[str, int]]:
         for y in range(self.height):
             for x in range(self.width):
                 point = Point(x, y)
                 yield point, Tile.from_grid(point, self.grids(point))
 
+    # TODO: remove region in place, set region at place() call instead
     def place(self, point: Point, tile: Tile, region: int):
         """
         assigns grid values for Tile at point with region
@@ -69,7 +75,7 @@ class GameMap(Map):
         return grids
 
     def tile(self, point: Point) -> Tile:
-        tile = Tile.empty()
+        tile = Tile.error(point)
         if self.in_bounds(point):
             tile = Tile.from_grid(point, self.grids(point))
         return tile
@@ -77,12 +83,22 @@ class GameMap(Map):
     def region(self, point: Point) -> int:
         return self.region_grid[point.x, point.y]
 
-    def in_bounds(self, pos: Point) -> bool:
+    def in_bounds(self, point: Point) -> bool:
         """
-        Checks if position is within the boundaries of the dungeon
-        :param pos: position to check
-        :type pos: Point
-        :return: True is pos is within boundaries of the dungeon
+        Checks if point is within the boundaries of the game map
+        :param point: point to check
+        :type point: Point
+        :return: True if point is within boundaries of the game map
         :rtype: bool
         """
-        return 0 <= pos.x < self.width and 0 <= pos.y < self.height
+        return 0 <= point.x < self.width and 0 <= point.y < self.height
+
+    def explore(self, point: Point):
+        """
+        sets explored_grid at point to True
+        :param point: point in game map to mark explored
+        :type point: Point
+        :return: None
+        :rtype: None
+        """
+        self.explored_grid[point.x, point.y] = True

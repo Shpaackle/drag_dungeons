@@ -47,6 +47,7 @@ class Tile:
         self.walkable: bool = walkable
         self.transparent: bool = transparent
         self.char: str = char
+        self.explored: bool = False
 
     def __str__(self):
         return f"{self.label.name} {self.position}"
