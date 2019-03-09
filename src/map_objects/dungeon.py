@@ -15,12 +15,8 @@ class Dungeon(Map):
         self.height: int = height
         self.width: int = width
 
-        self.grid_shape: Tuple[int, int] = (height, width)
-
         self.label_grid = numpy.full_like(self.walkable, 0, dtype=numpy.int)
-        self.region_grid = numpy.full_like(
-            self.walkable, fill_value=-1, dtype=numpy.int
-        )
+        self.region_grid = numpy.full_like(self.walkable, -1, dtype=numpy.int)
 
     @property
     def rows(self):
