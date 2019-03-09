@@ -1,5 +1,6 @@
 import numpy
 from loguru import logger
+from tcod.map import Map
 from typing import Dict, Tuple, Iterable, List
 
 from map_objects.point import Point
@@ -8,8 +9,9 @@ from map_objects.tile import Tile, TileType
 Grids = Dict[str, int]
 
 
-class Dungeon:
+class Dungeon(Map):
     def __init__(self, height: int, width: int):
+        super(Dungeon, self).__init__(width=width, height=height, order="F")
         self.height: int = height
         self.width: int = width
 
@@ -17,14 +19,13 @@ class Dungeon:
         self.tile_grid = numpy.full(shape=self.grid_shape, fill_value=Tile.empty()).T
         self.tile_map = numpy.zeros(shape=self.grid_shape, dtype=numpy.int).T
 
-        self.label_grid = numpy.zeros(shape=self.grid_shape, dtype=numpy.int).T
+        self.label_grid = numpy.full_like(self.walkable, 0, dtype=numpy.int)
+        self.region_grid = numpy.full_like(
+            self.walkable, fill_value=-1, dtype=numpy.int
+        )
+
         self.blocked_grid = numpy.full(shape=self.grid_shape, fill_value=True, dtype=numpy.bool).T
         self.blocks_sight_grid = numpy.full(shape=self.grid_shape, fill_value=True, dtype=numpy.bool).T
-        self.region_grid = numpy.full(
-            shape=self.grid_shape, fill_value=-1, dtype=numpy.int
-        ).T
-
-        self.fov_grid = numpy.zeros(shape=self.grid_shape, dtype=numpy.int).T
 
     @property
     def rows(self):
@@ -35,37 +36,39 @@ class Dungeon:
         return range(self.width)
 
     def blocked(self, point: Point) -> bool:
-        return self.blocked_grid[point.x, point.y]
+        return not self.walkable[point.x, point.y]
+        # return self.blocked_grid[point.x, point.y]
 
     def blocks_sight(self, point: Point) -> bool:
-        return self.blocks_sight_grid[point.x, point.y]
+        return self.transparent[point.x, point.y]
+        # return self.blocks_sight_grid[point.x, point.y]
 
     def label(self, point: Point) -> int:
         return self.label_grid[point.x, point.y]
 
     def __iter__(self) -> [Point, Dict[str, int]]:
-        for y in self.rows:
-            for x in self.columns:
+        for y in range(self.height):
+            for x in range(self.width):
                 point = Point(x, y)
-                yield point, self.grids(point)
+                yield point, Tile.from_grid(point, self.grids(point))
 
     # TODO: this needs to be refactored
-    def clear_dungeon(self):
-        """
-        Clears the dungeon data by filling the tile grid with empty tiles and region grid with -1
-        """
-        self.tile_grid = numpy.full(shape=self.grid_shape, fill_value=Tile.empty())
-        self.region_grid = numpy.full(
-            shape=self.grid_shape, fill_value=-1, dtype=numpy.int
-        )
-        self.tile_map = numpy.zeros(shape=self.grid_shape, dtype=numpy.int)
-
-        self.label_grid = numpy.zeros(shape=self.grid_shape, dtype=numpy.int).T
-        self.blocked_grid = numpy.ones(shape=self.grid_shape, dtype=numpy.int).T
-        self.blocks_sight_grid = numpy.ones(shape=self.grid_shape, dtype=numpy.int).T
-        self.region_grid = numpy.full(
-            shape=self.grid_shape, fill_value=-1, dtype=numpy.int
-        ).T
+    # def clear_dungeon(self):
+    #     """
+    #     Clears the dungeon data by filling the tile grid with empty tiles and region grid with -1
+    #     """
+    #     self.tile_grid = numpy.full(shape=self.grid_shape, fill_value=Tile.empty())
+    #     self.region_grid = numpy.full(
+    #         shape=self.grid_shape, fill_value=-1, dtype=numpy.int
+    #     )
+    #     self.tile_map = numpy.zeros(shape=self.grid_shape, dtype=numpy.int)
+    #
+    #     self.label_grid = numpy.zeros(shape=self.grid_shape, dtype=numpy.int).T
+    #     self.blocked_grid = numpy.ones(shape=self.grid_shape, dtype=numpy.int).T
+    #     self.blocks_sight_grid = numpy.ones(shape=self.grid_shape, dtype=numpy.int).T
+    #     self.region_grid = numpy.full(
+    #         shape=self.grid_shape, fill_value=-1, dtype=numpy.int
+    #     ).T
 
     def place(self, point: Point, tile: Tile, region: int):
         """
@@ -81,29 +84,25 @@ class Dungeon:
         """
         x, y = point
         self.label_grid[x, y] = tile.label.value
-        self.blocked_grid[x, y] = int(tile.blocked)
-        self.blocks_sight_grid[x, y] = int(tile.blocks_sight)
+        self.walkable[x, y] = tile.walkable
+        self.transparent[x, y] = tile.transparent
         self.region_grid[x, y] = region
+        # self.blocked_grid[x, y] = int(tile.walkable)
+        # self.blocks_sight_grid[x, y] = int(tile.transparent)
 
     def grids(self, point: Point) -> Dict[str, int]:
         grids = dict(
             label=self.label(point),
             region=self.region(point),
-            blocked=self.blocked(point),
-            blocks_sight=self.blocks_sight(point),
+            walkable=self.walkable[point.x, point.y],
+            transparent=self.transparent[point.x, point.y],
         )
         return grids
 
     def tile(self, point: Point) -> Tile:
         tile = Tile.empty()
-        if not self.in_bounds(point):
-            return Tile.empty(point)
-        try:
-            tile_num = self.tile_grid[point.x, point.y]
-
-        except IndexError:
-            print(f"{point} out of range")
-            return Tile.error(point)
+        if self.in_bounds(point):
+            tile = Tile.from_grid(point, self.grids(point))
         return tile
 
     def set_tile(self, point: Point, label: TileType):

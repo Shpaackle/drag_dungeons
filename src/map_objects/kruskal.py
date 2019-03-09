@@ -49,7 +49,7 @@ class Graph:
     # The main function to construct MST using Kruskal's
     # algorithm
     def kruskal_MST(self):
-        print(len(self.graph))
+        # print(len(self.graph))
         result = []  # This will store the resultant MST
 
         i = 0  # An index variable, used for sorted edges

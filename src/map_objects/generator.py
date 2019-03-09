@@ -69,12 +69,12 @@ class Room:
 class DungeonGenerator:
     def __init__(self, map_settings: dict):
 
-        self.dungeon = Dungeon(map_settings["map_height"], map_settings["map_width"])
+        self.dungeon = Dungeon(height=map_settings["map_height"], width=map_settings["map_width"])
 
         self.current_region: int = -1
 
-        self.rooms: list = []
-        self.corridors: list = []
+        self.rooms: List[Room] = []
+        self.corridors: List[Point] = []
 
         self.connections = []
 
@@ -93,14 +93,19 @@ class DungeonGenerator:
             yield x, y, Tile.from_grid(Point(x, y), grids)
 
     @property
+    def starting_position(self) -> Point:
+        return self.rooms[0].top_left
+
+    @property
     def game_map(self):
-        for point, grids in self.dungeon:
-            yield point, Tile.from_grid(point, grids)
+        # for point, grids in iter(self.dungeon):
+        #     yield point, Tile.from_grid(point, grids)
+        return self.dungeon
 
     @property
     def tile_map(self):
-        for point, grids in self.dungeon:
-            yield point, Tile.from_grid(point, grids)
+        for point, tile in self.dungeon:
+            yield point, tile
 
     @property
     def max_rooms(self):
@@ -323,13 +328,13 @@ class DungeonGenerator:
         """
         return self.find_neighbors(point, neighbors=Direction.cardinal())
 
-    def clear_map(self):
-        """
-        Clears map by setting rooms to an empty list and calling dungeon.clear_dungeon()
-        """
-        self.rooms = []
-
-        self.dungeon.clear_dungeon()
+    # def clear_map(self):
+    #     """
+    #     Clears map by setting rooms to an empty list and calling dungeon.clear_dungeon()
+    #     """
+    #     self.rooms = []
+    #
+    #     self.dungeon.clear_dungeon()
 
     def can_carve(self, pos: Point, direction: Point) -> bool:
 
@@ -491,10 +496,11 @@ class DungeonGenerator:
     @logger.catch()
     def place_tile(self, point: Point, label: TileType, region: int):
         tile = Tile.from_label(point, label)
-        self.dungeon.label_grid[point.x, point.y] = label.value
-        self.dungeon.blocked_grid[point.x, point.y] = int(tile.blocked)
-        self.dungeon.blocks_sight_grid[point.x, point.y] = int(tile.blocks_sight)
-        self.dungeon.region_grid[point.x, point.y] = region
+        x, y = point
+        self.dungeon.label_grid[x, y] = label.value
+        self.dungeon.walkable[x, y] = tile.walkable
+        self.dungeon.transparent[x, y] = tile.transparent
+        self.dungeon.region_grid[x, y] = region
 
     @logger.catch()
     def can_place(self, point: Point, direction: Point) -> bool:
@@ -543,9 +549,9 @@ class DungeonGenerator:
         for point, r1, r2, _ in region_tree:
             self.place_connection(point, r1)
             self.joined_regions.add(r2)
-        for region in range(self.current_region):
-            if region not in self.joined_regions:
-                print(f"region {region} not joined, but why?")
+        # for region in range(self.current_region):
+        #     if region not in self.joined_regions:
+        #         print(f"region {region} not joined, but why?")
 
     def place_connection(self, point, region):
         if random.randint(1, 4) == 1:

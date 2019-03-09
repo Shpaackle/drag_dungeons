@@ -40,22 +40,12 @@ class Tile:
         passable: if the tile is passable
     """
 
-    def __init__(
-        self,
-        x: int,
-        y: int,
-        *,
-        label: TileType = TileType.EMPTY,
-        blocked: bool = True,
-        blocks_sight: bool = True,
-        passable: bool = False,
-        char: str = const.Tiles.BLOCK
-    ):
+    def __init__(self, x: int, y: int, *, label: TileType = TileType.EMPTY, walkable: bool = False,
+                 transparent: bool = False, char: str = const.Tiles.BLOCK):
         self.position: Point = Point(x, y)
         self.label: TileType = label
-        self.blocked: bool = blocked
-        self.blocks_sight: bool = blocks_sight
-        self.passable: bool = passable
+        self.walkable: bool = walkable
+        self.transparent: bool = transparent
         self.char: str = char
 
     def __str__(self):
@@ -119,7 +109,7 @@ class Tile:
         :return: returns a tile at x and y of point with the label "FLOOR" and passable
         :rtype: Tile
         """
-        return Tile(point.x, point.y, label=TileType.FLOOR, blocked=False, blocks_sight=False, char=const.Tiles.FLOOR)
+        return Tile(point.x, point.y, label=TileType.FLOOR, walkable=True, transparent=True, char=const.Tiles.FLOOR)
 
     @classmethod
     def corridor(cls, point):
@@ -130,7 +120,8 @@ class Tile:
         :return: returns a tile at x and y of point with the label "CORRIDOR" and passable
         :rtype: Tile
         """
-        return Tile(point.x, point.y, label=TileType.CORRIDOR, blocked=False, blocks_sight=False, char=const.Tiles.CORRIDOR)
+        return Tile(point.x, point.y, label=TileType.CORRIDOR, walkable=True, transparent=True,
+                    char=const.Tiles.CORRIDOR)
 
     @classmethod
     def wall(cls, point):
@@ -141,7 +132,7 @@ class Tile:
         :return: returns a tile at x and y of point with the label "WALL" and not passable
         :rtype: Tile
         """
-        return Tile(point.x, point.y, label=TileType.WALL, blocked=True, blocks_sight=True, char=const.Tiles.WALL)
+        return Tile(point.x, point.y, label=TileType.WALL, walkable=False, transparent=False, char=const.Tiles.WALL)
 
     @classmethod
     def door(cls, point, opened=False):
@@ -149,13 +140,17 @@ class Tile:
         creates a door Tile that is not passable
         :param point: x- and y-coordinates for the tile
         :type point: Point
+        :param opened: if door is opened or closed
+        :type opened: bool
         :return: returns a tile at x and y of point with the label "DOOR" and not passable
         :rtype Tile
         """
         if opened:
-            return Tile(point.x, point.y, label=TileType.DOOR_OPEN, blocks_sight=False, blocked=False, char=const.Tiles.DOOR_OPEN)
+            return Tile(point.x, point.y, label=TileType.DOOR_OPEN, walkable=True, transparent=True,
+                        char=const.Tiles.DOOR_OPEN)
         else:
-            return Tile(point.x, point.y, label=TileType.DOOR_CLOSED, blocks_sight=True, blocked=True, char=const.Tiles.DOOR_CLOSED)
+            return Tile(point.x, point.y, label=TileType.DOOR_CLOSED, walkable=False, transparent=False,
+                        char=const.Tiles.DOOR_CLOSED)
 
     @classmethod
     def error(cls, point):
@@ -167,12 +162,12 @@ class Tile:
         #     x=point.x,
         #     y=point.y,
         #     label=TileType(grids["label"]),
-        #     blocked=grids.get("blocked", True),
-        #     blocks_sight=grids.get("blocks_sight", True),
+        #     walkable=grids.get("walkable", True),
+        #     transparent=grids.get("transparent", True),
         # )
         label = TileType(grids["label"])
         tile = Tile.from_label(point, label)
-        tile.blocked = grids.get("blocked", True)
-        tile.blocks_sight = grids.get("blocks_sight", True)
+        tile.walkable = grids.get("walkable", False)
+        tile.transparent = grids.get("transparent", False)
 
         return tile

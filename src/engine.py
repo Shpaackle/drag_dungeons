@@ -9,7 +9,7 @@ import const
 import processor as p
 
 from entity import Entity
-from fov_functions import initialize_fov
+from fov_functions import initialize_fov, update_fov
 from handle_keys import handle_keys
 from render_functions import render_all, clear_all
 from map_objects import DungeonGenerator, Point
@@ -83,15 +83,18 @@ class Game:
 def main():
     game_exit = False
     random_seed = datetime.now()
+    print(random_seed)
     random.seed(random_seed)
     dungeon = DungeonGenerator(const.MAP_SETTINGS)
     dungeon.build_dungeon()
 
-    fov_update: bool = True
-    fov_map = initialize_fov(game_map=dungeon.game_map)
+    game_map = dungeon.game_map
 
-    player = Entity(Point(10, 10), char="@", color="white")
-    npc = Entity(Point(12, 12), char="@", color="yellow")
+    fov_update: bool = True
+    initialize_fov(game_map=game_map)
+
+    player = Entity(dungeon.starting_position, char="@", color="white")
+    npc = Entity(Point(player.x + 1, player.y + 1), char="@", color="yellow")
     entities = [player, npc]
 
     terminal.refresh()
@@ -99,18 +102,28 @@ def main():
         key = None
         if terminal.has_input():
             key = terminal.read()
+
+        if fov_update:
+            update_fov(game_map, player.position)
+
+        render_all(entities, game_map=game_map, fov_update=fov_update)
+
+        fov_update = False
+
+        terminal.refresh()
+        clear_all(entities)
+
         action = handle_keys(key)
 
         move = action.get("move")
         game_exit = action.get("exit", False)
 
-        render_all(entities, game_map=dungeon.game_map)
-        terminal.refresh()
-        clear_all(entities)
-
         if move:
-            if not dungeon.is_blocked(player.position + move):
+            point = player.position + move
+            if game_map.walkable[point.x, point.y]:
                 player.move(move)
+
+                fov_update = True
 
 
 # def old_loop():
@@ -127,6 +140,7 @@ def main():
 
 if __name__ == "__main__":
     terminal.open()
+    terminal.composition(True)
     # logger.add(
     #     "logs/build_maze_{time}.log",
     #     level="ERROR",
