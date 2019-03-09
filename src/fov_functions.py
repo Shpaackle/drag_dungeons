@@ -1,6 +1,6 @@
 import const
 from map_objects import Point, Tile
-from map_objects.dungeon import GameMap
+from map_objects.game_map import GameMap
 
 
 def initialize_fov(game_map: GameMap):

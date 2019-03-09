@@ -1,13 +1,10 @@
-import numpy as np
 import random
-import json
 
-from collections import OrderedDict, namedtuple
-from dataclasses import dataclass
+from collections import OrderedDict
 from typing import List
 from loguru import logger
 
-from map_objects.dungeon import GameMap
+from map_objects.game_map import GameMap
 from map_objects.enums import Direction
 from map_objects.point import Point
 from map_objects.tile import Tile, TileType
