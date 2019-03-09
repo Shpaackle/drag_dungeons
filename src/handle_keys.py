@@ -28,5 +28,7 @@ def handle_keys(key):
             return {"move": Point(0, 0)}
         elif key == terminal.TK_ESCAPE or key == terminal.TK_CLOSE:
             return {"exit": True}
+        elif key == terminal.TK_R:
+            return {"remake": True}
 
         return {}
