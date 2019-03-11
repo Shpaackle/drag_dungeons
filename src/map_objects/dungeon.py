@@ -9,9 +9,10 @@ from map_objects.enums import Direction
 from map_objects.point import Point
 from map_objects.tile import Tile, TileType
 from map_objects.kruskal import Graph
+from rect import Rect
 
 
-class Room:
+class Room(Rect):
     """
     Args:
         x- and y-coordinate of the top left corner of the room
@@ -26,44 +27,45 @@ class Room:
     """
 
     def __init__(self, x: int, y: int, width: int, height: int):
-        self.x: int = x
-        self.y: int = y
-        self.width: int = width
-        self.height: int = height
+        super(Room, self).__init__(Point(x, y), width, height)
+        # self.x: int = x
+        # self.y: int = y
+        # self.width: int = width
+        # self.height: int = height
         self.region: int = None
         self.connections: list = []
 
-    def __iter__(self):
-        for i in range(self.height):
-            for j in range(self.width):
-                yield Point(x=self.x + j, y=self.y + i)
+    # def __iter__(self):
+    #     for i in range(self.height):
+    #         for j in range(self.width):
+    #             yield Point(x=self.x + j, y=self.y + i)
 
-    @property
-    def top_left(self) -> Point:
-        return Point(self.x, self.y)
+    # @property
+    # def top_left(self) -> Point:
+    #     return Point(self.x, self.y)
+    #
+    # @property
+    # def top_right(self) -> Point:
+    #     return Point(self.x + self.width - 1, self.y)
+    #
+    # @property
+    # def bottom_left(self) -> Point:
+    #     return Point(self.x, self.y + self.height - 1)
+    #
+    # @property
+    # def bottom_right(self) -> Point:
+    #     return Point(self.x + self.width - 1, self.y + self.height - 1)
+    #
+    # @property
+    # def right(self) -> int:
+    #     return self.x + self.width - 1
+    #
+    # @property
+    # def bottom(self) -> int:
+    #     return self.y + self.height - 1
 
-    @property
-    def top_right(self) -> Point:
-        return Point(self.x + self.width - 1, self.y)
 
-    @property
-    def bottom_left(self) -> Point:
-        return Point(self.x, self.y + self.height - 1)
-
-    @property
-    def bottom_right(self) -> Point:
-        return Point(self.x + self.width - 1, self.y + self.height - 1)
-
-    @property
-    def right(self) -> int:
-        return self.x + self.width - 1
-
-    @property
-    def bottom(self) -> int:
-        return self.y + self.height - 1
-
-
-class DungeonGenerator:
+class Dungeon:
     def __init__(self, map_settings: dict):
 
         self.dungeon = GameMap(height=map_settings["map_height"], width=map_settings["map_width"])
@@ -544,10 +546,11 @@ class DungeonGenerator:
         #         print(f"region {region} not joined, but why?")
 
     def place_connection(self, point, region):
-        if random.randint(1, 4) == 1:
-            label = TileType.DOOR_OPEN
-        else:
-            label = TileType.DOOR_CLOSED
+        # if random.randint(1, 4) == 1:
+        #     label = TileType.DOOR_OPEN
+        # else:
+        #     label = TileType.DOOR_CLOSED
+        label = TileType.DOOR_OPEN
         self.place_tile(point, label, region)
 
     def get_unconnected_regions(self, connector_regions):

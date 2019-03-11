@@ -28,6 +28,9 @@ class GameMap(Map):
     def columns(self):
         return range(self.width)
 
+    def in_fov(self, point: Point) -> bool:
+        return self.fov[point.x, point.y]
+
     def blocked(self, point: Point) -> bool:
         return not self.walkable[point.x, point.y]
 
@@ -71,11 +74,13 @@ class GameMap(Map):
             region=self.region(point),
             walkable=self.walkable[point.x, point.y],
             transparent=self.transparent[point.x, point.y],
+            visible=self.in_fov(point),
+            explored=self.explored(point)
         )
         return grids
 
     def tile(self, point: Point) -> Tile:
-        tile = Tile.error(point)
+        tile = Tile.empty(point)
         if self.in_bounds(point):
             tile = Tile.from_grid(point, self.grids(point))
         return tile
@@ -101,4 +106,5 @@ class GameMap(Map):
         :return: None
         :rtype: None
         """
-        self.explored_grid[point.x, point.y] = True
+        if not self.explored(point):
+            self.explored_grid[point.x, point.y] = True

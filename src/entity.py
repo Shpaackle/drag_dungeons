@@ -5,7 +5,8 @@ class Entity:
     """
     A generic object to represent players, enemies, items, etc.
     """
-    def __init__(self, position: Point, char: str, color: str):
+    def __init__(self, name: str, position: Point, char: str, color: str):
+        self.name: str = name
         self.position: Point = position
         self.char: str = char
         self.color: str = color

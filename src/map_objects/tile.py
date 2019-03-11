@@ -40,20 +40,26 @@ class Tile:
         passable: if the tile is passable
     """
 
-    def __init__(self, x: int, y: int, *, label: TileType = TileType.EMPTY, walkable: bool = False,
-                 transparent: bool = False, char: str = const.Tiles.BLOCK):
+    def __init__(self, x: int, y: int, *, label: TileType = None, walkable: bool = False,
+                 transparent: bool = False, char: str = None):
+        if label is None:
+            label = TileType.EMPTY
+        if char is None:
+            char = const.Tiles.UNSEEN
+
         self.position: Point = Point(x, y)
         self.label: TileType = label
         self.walkable: bool = walkable
         self.transparent: bool = transparent
         self.char: str = char
         self.explored: bool = False
+        self.visible: bool = False
 
     def __str__(self):
         return f"{self.label.name} {self.position}"
 
     def __repr__(self):
-        return f"({self.__class__.__name__}) x={self.x}, y={self.y}, label={self.label}, passable={self.passable}"
+        return f"({self.__class__.__name__}) x={self.x}, y={self.y}, label={self.label}"
 
     @property
     def x(self) -> int:
@@ -150,8 +156,7 @@ class Tile:
             return Tile(point.x, point.y, label=TileType.DOOR_OPEN, walkable=True, transparent=True,
                         char=const.Tiles.DOOR_OPEN)
         else:
-            # TODO: change walkable for TileType.DOOR_CLOSED to False when doors fully implemented
-            return Tile(point.x, point.y, label=TileType.DOOR_CLOSED, walkable=True, transparent=False,
+            return Tile(point.x, point.y, label=TileType.DOOR_CLOSED, walkable=False, transparent=False,
                         char=const.Tiles.DOOR_CLOSED)
 
     @classmethod
@@ -171,5 +176,7 @@ class Tile:
         tile = Tile.from_label(point, label)
         tile.walkable = grids.get("walkable", False)
         tile.transparent = grids.get("transparent", False)
+        tile.explored = grids.get("explored", False)
+        tile.visible = grids.get("visible", False)
 
         return tile

@@ -4,12 +4,13 @@ from bearlibterminal import terminal
 # from loguru import logger
 
 import const
+from camera import Camera
 
 from entity import Entity
 from fov_functions import initialize_fov, update_fov
 from handle_keys import handle_keys
 from render_functions import render_all, clear_all
-from map_objects import DungeonGenerator, Point
+from map_objects import Dungeon, Point
 
 
 class Game:
@@ -19,7 +20,7 @@ class Game:
         else:
             self.random_seed = random_seed
 
-        self.dungeon = DungeonGenerator(const.MAP_SETTINGS)
+        self.dungeon = Dungeon(const.MAP_SETTINGS)
 
     def on_enter(self):
         random.seed(self.random_seed)
@@ -31,7 +32,7 @@ def main():
     random_seed = datetime.now()
     print(random_seed)
     random.seed(random_seed)
-    dungeon = DungeonGenerator(const.MAP_SETTINGS)
+    dungeon = Dungeon(const.MAP_SETTINGS)
     dungeon.build_dungeon()
 
     game_map = dungeon.game_map
@@ -39,11 +40,14 @@ def main():
     fov_update: bool = True
     initialize_fov(game_map=game_map)
 
-    player = Entity(dungeon.starting_position, char="@", color="white")
-    npc = Entity(Point(player.x + 1, player.y + 1), char="@", color="yellow")
+    player = Entity("Player", dungeon.starting_position, char="@", color="white")
+    npc = Entity("NPC", Point(player.x + 1, player.y + 1), char="@", color="yellow")
     entities = [player, npc]
 
+    camera = Camera(player)
+
     terminal.refresh()
+    
     while not game_exit:
         key = None
         if terminal.has_input():
@@ -52,7 +56,7 @@ def main():
         if fov_update:
             update_fov(game_map, player.position)
 
-        render_all(entities, game_map=game_map, fov_update=fov_update)
+        render_all(entities, game_map=game_map, fov_update=fov_update, camera=camera)
 
         fov_update = False
 

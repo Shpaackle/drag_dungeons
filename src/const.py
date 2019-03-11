@@ -6,8 +6,8 @@ TITLE = "Drag Dungeons"
 SCREEN_WIDTH = 80
 SCREEN_HEIGHT = 50
 
-MAP_WIDTH = 31
-MAP_HEIGHT = 21
+CAMERA_WIDTH = 31
+CAMERA_HEIGHT = 21
 
 FOV_ALGORITHM = 0
 FOV_LIGHT_WALLS = True
@@ -16,8 +16,8 @@ FOV_RADIUS = 10
 FONT_PATH = "data/consolas10x10.png"
 
 MAP_SETTINGS = {
-    "map_height": 21,
-    "map_width": 31,
+    "map_height": 31,
+    "map_width": 51,
     "tile_size": 10,
     "num_rooms": 100,
     "min_room_size": 3,
@@ -60,7 +60,7 @@ class Layers:
     BACKGROUND = 0
     MAP = 10
     PLAYER = 20
-    LIGHT = 30
+    LIGHT = 40
     TESTING = 50
 
 
