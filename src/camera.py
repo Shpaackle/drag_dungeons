@@ -1,11 +1,11 @@
-from entity import Entity
+#from entity import Entity
 from map_objects import Point
 from rect import Rect
 from const import CAMERA_HEIGHT, CAMERA_WIDTH
 
 
 class Camera:
-    def __init__(self, player: Entity, width: int = None, height: int = None):
+    def __init__(self, player, width: int = None, height: int = None):
         self.player = player
         if width is None:
             self.width = CAMERA_WIDTH

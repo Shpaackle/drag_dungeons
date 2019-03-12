@@ -1,15 +1,64 @@
-import random
+import numpy as np
 
-from collections import OrderedDict
-from typing import List
+from collections import defaultdict, OrderedDict
 from loguru import logger
+from random import randint, randrange, choice
+from typing import Dict, Iterable, List, Set, Tuple
 
+from const import Tiles
+from entity import Entity
 from map_objects.game_map import GameMap
 from map_objects.enums import Direction
 from map_objects.point import Point
 from map_objects.tile import Tile, TileType
 from map_objects.kruskal import Graph
 from rect import Rect
+
+
+class RegionGraph:
+    def __init__(self, vertices: int, main_region: int):
+        self.V = vertices
+
+        self.adj_matrix = np.zeros((vertices, vertices), dtype=np.int)
+        self.connected_matrix = np.zeros_like(self.adj_matrix)
+        for i in range(vertices):
+            self.adj_matrix[i, i] = 1
+            self.connected_matrix[i, i] = 1
+
+        self.edge_points: Dict[Tuple[int, int], List[Point]] = defaultdict(list)
+        self._main_region = main_region
+        self.connection_points: Set[Point] = set()
+
+    def add_edge(self, v1: int, v2: int, connection: Point = None):
+        self.adj_matrix[v1, v2] = 1
+        self.adj_matrix[v2, v1] = 1
+        self.edge_points[(min(v1, v2), max(v1, v2))].append(connection)
+
+    def remove_edge(self, v1: int, v2: int):
+        self.adj_matrix[v1, v2] = 0
+        self.adj_matrix[v2, v1] = 0
+        # del self.edge_points[(min(v1, v2), max(v1, v2))]
+
+    def join_regions(self, v1: int, point: Point):
+        for v2 in self.merged_regions:
+            self.connected_matrix[v1, v2] = 1
+            self.connected_matrix[v2, v1] = 1
+            self.remove_edge(v1, v2)
+        self.connection_points.add(point)
+
+    def find_neighbors(self, v1: int):
+        for v2 in range(self.V):
+            if self.adj_matrix[v1, v2] == 1:
+                yield v2
+
+    def find_connections(self, v1: int) -> Iterable[int]:
+        for v2 in range(self.V):
+            if self.connected_matrix[v1, v2] == 1:
+                yield v2
+
+    @property
+    def merged_regions(self) -> Set[int]:
+        return set(self.find_connections(self._main_region))
 
 
 class Room(Rect):
@@ -85,6 +134,8 @@ class Dungeon:
         self.region_graph = None
         self.connector_regions = None
         self.joined_regions = None
+
+        self.entities = None
 
     @property
     def starting_position(self) -> Point:
@@ -194,8 +245,8 @@ class Dungeon:
         for _ in range(attempts):
             if len(self.rooms) >= self.max_rooms:
                 break
-            room_width = random.randrange(min_room_size, max_room_size, room_step)
-            room_height = random.randrange(min_room_size, max_room_size, room_step)
+            room_width = randrange(min_room_size, max_room_size, room_step)
+            room_height = randrange(min_room_size, max_room_size, room_step)
             start_point = self.random_point()
             self.place_room(
                 start_point.x, start_point.y, room_width, room_height, margin
@@ -272,7 +323,7 @@ class Dungeon:
 
                 if (
                     last_direction in open_tiles
-                    and random.randint(1, 101) > self.winding_percent
+                    and randint(1, 101) > self.winding_percent
                 ):
 
                     current_direction = last_direction
@@ -280,7 +331,7 @@ class Dungeon:
                 else:
                     # TODO: refactor for random.choice()
                     current_direction = open_tiles[
-                        random.randint(0, len(open_tiles) - 1)
+                        randint(0, len(open_tiles) - 1)
                     ]
 
                 self.place_tile(tile + current_direction, region=region, label=label)
@@ -355,16 +406,16 @@ class Dungeon:
         cells = []
         if start_point is None:
             start_point = Point(
-                x=random.randint(1, self.width - 2),
-                y=random.randint(1, self.height - 2),
+                x=randint(1, self.width - 2),
+                y=randint(1, self.height - 2),
             )
             # TODO: refactor can_carve
         attempts = 0
         while not self.can_carve(start_point, Direction.self()):
             attempts += 1
             start_point = Point(
-                x=random.randint(1, self.width - 2),
-                y=random.randint(1, self.height - 2),
+                x=randint(1, self.width - 2),
+                y=randint(1, self.height - 2),
             )
             # TODO: need to remove this hard stop once everything is combined
             if attempts > 100:
@@ -381,7 +432,7 @@ class Dungeon:
             start_point = cells[-1]
             possible_moves = self.possible_moves(start_point)
             if possible_moves:
-                point = random.choice(possible_moves)
+                point = choice(possible_moves)
                 self.carve(
                     point=point, region=self.current_region, label=TileType.CORRIDOR
                 )
@@ -429,8 +480,8 @@ class Dungeon:
 
     def random_point(self) -> Point:
         return Point(
-            x=random.randint(0, self.dungeon.width),
-            y=random.randint(0, self.dungeon.height),
+            x=randint(0, self.dungeon.width),
+            y=randint(0, self.dungeon.height),
         )
 
     def build_dungeon(self):
@@ -533,14 +584,87 @@ class Dungeon:
         return connector_regions
 
     def connect_regions(self):
-        self.connector_regions = self.find_connectors()
-        self.joined_regions = set()
+        # self.joined_regions = set()
+        connector_regions = self.find_connectors()
 
-        self.min_spanning_tree()
-        region_tree = self.region_graph.result
-        for point, r1, r2, _ in region_tree:
-            self.place_connection(point, r1)
-            self.joined_regions.add(r2)
+        regions_connectors = defaultdict(list)
+        region_neighbors = defaultdict(list)
+        for c, (r1, r2) in connector_regions.items():
+            region_pair = (min(r1, r2), max(r1, r2))
+            regions_connectors[region_pair].append(c)
+            region_neighbors[r1].append(r2)
+            region_neighbors[r2].append(r1)
+
+        all_connectors = list(connector_regions.keys())
+
+        # choose random room to begin set for main region
+        start_region = randint(0, len(self.rooms))
+        # initialize region graph
+        g = RegionGraph(self.current_region + 1, start_region)
+        # add edges to graph
+        for p, (r1, r2) in connector_regions.items():
+            g.add_edge(r1, r2, p)
+
+        while all_connectors:
+
+            neighbors = [
+                n for r in g.merged_regions for n in g.find_neighbors(r)
+            ]
+
+            # choose random neighbor
+            neighbor = choice(neighbors)
+            # get connecting points between merged regions and neighbor
+            poss_connections = [
+                point for r in g.merged_regions for point in regions_connectors[(min(r, neighbor), max(r, neighbor))]
+            ]
+            # choose random connecting point
+            if poss_connections:
+                chosen_connection = choice(poss_connections)
+                # place connection at point connecting the regions
+                self.place_connection(chosen_connection, start_region)
+                # add neighbor to merged region
+                g.join_regions(neighbor, chosen_connection)
+            else:
+                print(f"poss_connections was empty, neighbor={neighbor}")
+                chosen_connection = Point(0, 0)
+            # for every point all connectors
+            remove_list = set()
+            for point in all_connectors:
+                r1, r2 = connector_regions.get(point, [-1, -1])
+                if point.distance(chosen_connection) <= 1:
+                    pass
+                elif r1 in g.merged_regions and r2 in g.merged_regions:
+                    if randint(0, self.map_settings["extra_door_chance"]) == 0:
+                        self.place_connection(chosen_connection, start_region)
+                        g.join_regions(r1, point)
+                        g.join_regions(r2, point)
+                else:
+                    # still not connected to merged region
+                    continue
+                remove_list.add(point)
+            for p in remove_list:
+                if p in all_connectors:
+                    all_connectors.remove(p)
+                else:
+                    print(f"failed to remove {p} from all_connectors")
+
+        joined_regions = {
+            c for c in g.find_connections(start_region)
+        }
+
+        if len(joined_regions) != self.current_region + 1:
+            print(f"current_region = {self.current_region}")
+            print(f"joined regions = {joined_regions}")
+
+        self.region_graph = g
+        self.connector_regions = connector_regions
+
+        # self.min_spanning_tree()
+        # region_tree = self.region_graph.result
+        # for point, r1, r2, _ in region_tree:
+        #     self.place_connection(point, r1)
+        #     self.joined_regions.add(r2)
+
         # for region in range(self.current_region):
         #     if region not in self.joined_regions:
         #         print(f"region {region} not joined, but why?")
@@ -550,6 +674,7 @@ class Dungeon:
         #     label = TileType.DOOR_OPEN
         # else:
         #     label = TileType.DOOR_CLOSED
+        # TODO: undo commented code when doors work
         label = TileType.DOOR_OPEN
         self.place_tile(point, label, region)
 
@@ -600,3 +725,26 @@ class Dungeon:
             return True
 
         return False
+
+    def place_entities(self, player: Entity) -> List[Entity]:
+        max_monsters_per_room = self.map_settings["max_monsters_per_room"]
+
+        self.entities = [player]
+
+        for room in self.rooms[1:]:
+            number_of_monsters = randint(0, max_monsters_per_room)
+
+            for i in range(number_of_monsters):
+                x = randint(room.left, room.right)
+                y = randint(room.top, room.bottom)
+                point = Point(x, y)
+
+                if not any([entity for entity in self.entities if entity.position == point]):
+                    if randint(0, 100) < 80:
+                        monster = Entity(name="goblin", position=point, char=Tiles.GOBLIN, blocks=True)
+                    else:
+                        monster = Entity(name="orc", position=point, char=Tiles.ORC, blocks=True)
+
+                    self.entities.append(monster)
+
+        return self.entities

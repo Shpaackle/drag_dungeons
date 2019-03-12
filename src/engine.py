@@ -3,14 +3,15 @@ from datetime import datetime
 from bearlibterminal import terminal
 # from loguru import logger
 
-import const
+from const import Tiles, MAP_SETTINGS
 from camera import Camera
 
-from entity import Entity
+from entity import Entity, blocking_entities
 from fov_functions import initialize_fov, update_fov
 from handle_keys import handle_keys
 from render_functions import render_all, clear_all
 from map_objects import Dungeon, Point
+from game_states import GameStates
 
 
 class Game:
@@ -20,7 +21,7 @@ class Game:
         else:
             self.random_seed = random_seed
 
-        self.dungeon = Dungeon(const.MAP_SETTINGS)
+        self.dungeon = Dungeon(MAP_SETTINGS)
 
     def on_enter(self):
         random.seed(self.random_seed)
@@ -32,7 +33,7 @@ def main():
     random_seed = datetime.now()
     print(random_seed)
     random.seed(random_seed)
-    dungeon = Dungeon(const.MAP_SETTINGS)
+    dungeon = Dungeon(MAP_SETTINGS)
     dungeon.build_dungeon()
 
     game_map = dungeon.game_map
@@ -40,13 +41,15 @@ def main():
     fov_update: bool = True
     initialize_fov(game_map=game_map)
 
-    player = Entity("Player", dungeon.starting_position, char="@", color="white")
-    npc = Entity("NPC", Point(player.x + 1, player.y + 1), char="@", color="yellow")
-    entities = [player, npc]
+    player = Entity("Player", dungeon.starting_position, char=Tiles.PLAYER, color="white", blocks=True)
+    # npc = Entity("NPC", Point(player.x + 1, player.y + 1), char="@", color="yellow")
+    entities = dungeon.place_entities(player)
 
     camera = Camera(player)
 
     terminal.refresh()
+
+    game_state = GameStates.PLAYER_TURN
     
     while not game_exit:
         key = None
@@ -68,12 +71,35 @@ def main():
         move = action.get("move")
         game_exit = action.get("exit", False)
 
-        if move:
-            point = player.position + move
-            if game_map.walkable[point.x, point.y]:
-                player.move(move)
+        # if action.get("rebuild"):
+        #     random_seed = datetime.now()
+        #     print(f"Rebuilding dungeon with new random seed: {random_seed}")
+        #     random.seed(random_seed)
+        #     dungeon = Dungeon(MAP_SETTINGS)
+        #     dungeon.build_dungeon()
+        #     game_map = dungeon.game_map
+        #     fov_update = True
 
-                fov_update = True
+        if game_state == GameStates.ENEMY_TURN:
+            for entity in entities[1:]:
+                print(f"The {entity} ponders the meaning of its existence.")
+
+            game_state = GameStates.PLAYER_TURN
+
+        if move and game_state == GameStates.PLAYER_TURN:
+            point = player.position + move
+            if not game_map.blocked(point):
+                target = blocking_entities(entities, point)
+
+                if target:
+                    print(f"You kick the {target} in the shins, much to its annoyance!")
+
+                else:
+                    player.move(move)
+
+                    fov_update = True
+
+                game_state = GameStates.ENEMY_TURN
 
 
 if __name__ == "__main__":

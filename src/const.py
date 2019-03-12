@@ -23,6 +23,8 @@ MAP_SETTINGS = {
     "min_room_size": 3,
     "max_room_size": 7,
     "room_margin": 1,
+    "extra_door_chance": 30,
+    "max_monsters_per_room": 3
 }
 
 COLORS = {
@@ -73,3 +75,6 @@ class Tiles:
     DOOR_CLOSED = "\uE005"
     BLOCK = "\u2588"
     DOOR_OPEN = "\uE006"
+    GOBLIN = "\uE007"
+    ORC = "\uE008"
+    PLAYER = "\uE009"

@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 from enum import Enum
 
@@ -83,8 +84,8 @@ class Point:
     def _direction(self, point):
         return Point(self.x + point.x, self.y + point.y)
 
-    def distance(self, point):
-        return Point(abs(self.x - point.x), abs(self.y - point.y))
+    # def distance(self, point):
+    #     return Point(abs(self.x - point.x), abs(self.y - point.y))
 
     @property
     def all_neighbors(self):
@@ -95,6 +96,10 @@ class Point:
     def direct_neighbors(self):
         for direction in [self.N, self.E, self.S, self.W]:
             yield direction
+
+    def distance(self, p2):
+        x, y = self - p2
+        return math.sqrt(x ** 2 + y ** 2)
 
 
 class Direction(Enum):

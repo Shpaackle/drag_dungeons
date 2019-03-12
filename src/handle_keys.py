@@ -29,6 +29,6 @@ def handle_keys(key):
         elif key == terminal.TK_ESCAPE or key == terminal.TK_CLOSE:
             return {"exit": True}
         elif key == terminal.TK_R:
-            return {"remake": True}
+            return {"rebuild": True}
 
         return {}
