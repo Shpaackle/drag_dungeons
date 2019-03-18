@@ -13,7 +13,7 @@ from entity import Entity, blocking_entities
 from fov_functions import initialize_fov, update_fov
 from handle_keys import handle_keys
 from render_functions import render_all, clear_all
-from map_objects import Dungeon, Point, GameMap, Room
+from map_objects import Dungeon, Point, GameMap, Room, TileType
 from game_states import GameStates
 
 
@@ -42,13 +42,32 @@ class Engine:
             for entity in entities:
                 yield entity
 
-    def initialize(self):
+    def initialize(self, test=False):
         self.current_state = GameStates.INITIALIZE
         random.seed(self.random_seed)
         print(self.random_seed)
 
-        self.dungeon = Dungeon(MAP_SETTINGS)
-        self.dungeon.build_dungeon()
+        if test:
+            map_settings = {
+                "map_height": 15,
+                "map_width": 21,
+                "tile_size": 10,
+                "num_rooms": 100,
+                "min_room_size": 3,
+                "max_room_size": 7,
+                "room_margin": 1,
+                "extra_door_chance": 30,
+                "max_monsters_per_room": 3
+            }
+            self.dungeon = Dungeon(map_settings)
+            self.dungeon.place_room(2, 2, 7, 9, 1)
+            self.dungeon.place_room(14, 6, 5, 7, 1)
+            for i in range(7):
+                self.dungeon.place_tile(Point(9+i, 8), TileType.FLOOR, 2)
+            # self.dungeon.place_tile(Point(9, 8), TileType.FLOOR, region=2)
+        else:
+            self.dungeon = Dungeon(MAP_SETTINGS)
+            self.dungeon.build_dungeon()
 
         fighter_component = Fighter(hp=30, defense=2, power=5)
         graphics_component = Graphics(
@@ -68,7 +87,7 @@ class Engine:
         # self.player: Entity = player
         # self._entities: List[Entity] = entities
 
-        self.place_entities()
+        self.place_entities(test=test)
 
         self.camera = Camera(player=self.player)
 
@@ -141,7 +160,7 @@ class Engine:
             # game_map = self.dungeon.maps(self.camera.position, self.camera.width, self.camera.height)
             # self.game_map = game_map
 
-    def render(self):
+    def render(self, test=False):
         # x = max(self.camera.x, 0)
         # y = max(self.camera.y, 0)
         # x2 = min(x1 + self.camera.width, self.dungeon.width - 1)
@@ -156,7 +175,8 @@ class Engine:
             entities=self.entities,
             fov_update=self.fov_update,
             camera=self.camera,
-            dungeon=self.dungeon
+            dungeon=self.dungeon,
+            test=test
         )
         terminal.refresh()
         clear_all(self.entities)
@@ -165,7 +185,7 @@ class Engine:
     def entity_locations(self):
         return self._entities
 
-    def place_entities(self):
+    def place_entities(self, test=False):
         max_monsters_per_room = MAP_SETTINGS["max_monsters_per_room"]
 
         rooms = self.dungeon.rooms
@@ -188,12 +208,51 @@ class Engine:
             if room == starting_room:
                 continue
 
+            if test:
+                point = room.top_left
+                monster = Entity(
+                    name="goblin",
+                    position=point,
+                    char=Tiles.GOBLIN,
+                    blocks=True,
+                    fighter=Fighter(hp=16, defense=1, power=4),
+                    ai=BasicMonster(),
+                    graphics=Graphics(char=Tiles.GOBLIN, layer=Layers.PLAYER)
+                )
+                self._entities[point].append(monster)
+
+                point = room.top_right
+                monster = Entity(
+                    name="goblin",
+                    position=point,
+                    char=Tiles.GOBLIN,
+                    blocks=True,
+                    fighter=Fighter(hp=16, defense=1, power=4),
+                    ai=BasicMonster(),
+                    graphics=Graphics(char=Tiles.GOBLIN, layer=Layers.PLAYER)
+                )
+                self._entities[point].append(monster)
+
+                point = room.bottom_right
+                monster = Entity(
+                    name="goblin",
+                    position=point,
+                    char=Tiles.GOBLIN,
+                    blocks=True,
+                    fighter=Fighter(hp=16, defense=1, power=4),
+                    ai=BasicMonster(),
+                    graphics=Graphics(char=Tiles.GOBLIN, layer=Layers.PLAYER)
+                )
+                self._entities[point].append(monster)
+
+                continue
+
             for i in range(random.randrange(max_monsters_per_room)):
                 x = random.randrange(room.left, room.right)
                 y = random.randrange(room.top, room.bottom)
                 point = Point(x, y)
 
-                if not entities.get(point):
+                if not self.entity_locations.get(point):
                     if random.randrange(100) < 80:
                         monster = Entity(
                             name="goblin",
@@ -219,8 +278,9 @@ class Engine:
 
 
 def main():
-    engine = Engine(random_seed="TEST_MAP")
-    engine.initialize()
+    # engine = Engine(random_seed="TEST_MAP")
+    engine = Engine()
+    engine.initialize(test=True)
 
     engine.fov_update = True
     engine.update()
@@ -229,7 +289,7 @@ def main():
     while not engine.current_state == GameStates.EXIT:
         engine.handle_input()
         engine.update()
-        engine.render()
+        engine.render(test=True)
 
 
 if __name__ == "__main__":

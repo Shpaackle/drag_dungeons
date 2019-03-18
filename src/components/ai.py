@@ -3,7 +3,7 @@ class BasicMonster:
         self.owner = None
 
     def take_turn(self, target, dungeon, entity_locations):
-        print(f"The {self.owner} wonders when it will get to move.")
+        # print(f"The {self.owner} wonders when it will get to move.")
         monster = self.owner
         if monster.position.distance(target.position) >= 2:
             monster.move_towards(target.position, entity_locations=entity_locations, game_map=dungeon.game_map)

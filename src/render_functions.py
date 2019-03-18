@@ -6,13 +6,13 @@ from entity import Entity
 from map_objects import GameMap, Dungeon
 
 
-def render_all(entities, fov_update: bool, camera: Camera, dungeon: Dungeon):
+def render_all(entities, fov_update: bool, camera: Camera, dungeon: Dungeon, test=False):
     if fov_update:
         terminal.clear()
         terminal.layer(Layers.MAP)
-        dungeon.render_game_map(camera)
+        dungeon.render_game_map(camera, test=test)
 
-    for entity in entities:
+    for entity in iter(entities):
         if dungeon.can_see(entity=entity, view=camera):
             point = entity.position - camera.top_left
             entity.graphics.render(point)

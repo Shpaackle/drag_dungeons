@@ -788,13 +788,17 @@ class Dungeon:
             for x in range(x1, x1 + width):
                 yield Point(x, y), self.tile(x, y)
 
-    def render_game_map(self, camera: Rect):
+    def render_game_map(self, camera: Rect, test=False):
         for row, y in enumerate(range(camera.y, camera.bottom)):
             for col, x in enumerate(range(camera.x, camera.right)):
                 if y < 0 or self.height <= y or x < 0 or self.width <= x:
                     # put blank tile
                     continue
                 tile = self.tile(x, y)
+
+                if test:
+                    blt.color("white")
+                    blt.put(col, row, tile.char)
 
                 if tile.explored:
                     color = "gray"
@@ -810,7 +814,7 @@ class Dungeon:
                 blt.puts(col, row, f"[color={color}]{char}[/color]")
 
     def can_see(self, entity: Entity, view: Rect) -> bool:
-        if view.left <= entity.x <= view.right and view.top <= entity.y <= view.bottom:
+        if view.in_bounds(entity.position):
             if self.game_map.in_fov(entity.position):
                 return True
         else:

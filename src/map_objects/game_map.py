@@ -38,6 +38,8 @@ class GameMap(Map):
             return True
 
     def blocked(self, point: Point) -> bool:
+        if not self.in_bounds(point):
+            return False
         return not self.walkable[point.x, point.y]
 
     def blocks_sight(self, point: Point) -> bool:
