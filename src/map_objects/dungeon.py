@@ -1,11 +1,13 @@
 import numpy as np
 
+from bearlibterminal import terminal as blt
 from collections import defaultdict, OrderedDict
 from loguru import logger
 from random import randint, randrange, choice
 from typing import Dict, Iterable, List, Set, Tuple
 
-from const import Tiles
+from components import Fighter, BasicMonster, Graphics
+from const import Tiles, Layers
 from entity import Entity
 from map_objects.game_map import GameMap
 from map_objects.enums import Direction
@@ -117,7 +119,9 @@ class Room(Rect):
 class Dungeon:
     def __init__(self, map_settings: dict):
 
-        self.dungeon = GameMap(height=map_settings["map_height"], width=map_settings["map_width"])
+        self.game_map = GameMap(
+            height=map_settings["map_height"], width=map_settings["map_width"]
+        )
 
         self.current_region: int = -1
 
@@ -141,14 +145,14 @@ class Dungeon:
     def starting_position(self) -> Point:
         return self.rooms[0].top_left
 
-    @property
-    def game_map(self):
-        return self.dungeon
+    # @property
+    # def game_map(self):
+    #     return self.game_map
 
-    @property
-    def tile_map(self):
-        for point, tile in self.dungeon:
-            yield point, tile
+    # @property
+    # def tile_map(self):
+    #     for point, tile in self.game_map:
+    #         yield point, tile
 
     @property
     def max_rooms(self):
@@ -162,9 +166,9 @@ class Dungeon:
         return self.current_region
 
     def initialize_map(self):
-        for y in self.dungeon.rows:
-            for x in self.dungeon.columns:
-                self.dungeon.place(Point(x, y), Tile.wall(Point(x, y)), region=-1)
+        for y in self.game_map.rows:
+            for x in self.game_map.columns:
+                self.game_map.place(Point(x, y), Tile.wall(Point(x, y)), region=-1)
 
     # TODO: refactor self.tile to take Point
     def tile(self, x: int, y: int) -> Tile:
@@ -178,7 +182,7 @@ class Dungeon:
         :rtype: Tile
         """
 
-        grids = self.dungeon.grids(Point(x, y))
+        grids = self.game_map.grids(Point(x, y))
         tile = Tile.from_grid(Point(x, y), grids)
 
         return tile
@@ -215,7 +219,7 @@ class Dungeon:
             for point in room:
 
                 tile = Tile.floor(point)
-                self.dungeon.place(point, tile, region)
+                self.game_map.place(point, tile, region)
 
             self.rooms.append(room)
 
@@ -330,9 +334,7 @@ class Dungeon:
 
                 else:
                     # TODO: refactor for random.choice()
-                    current_direction = open_tiles[
-                        randint(0, len(open_tiles) - 1)
-                    ]
+                    current_direction = open_tiles[randint(0, len(open_tiles) - 1)]
 
                 self.place_tile(tile + current_direction, region=region, label=label)
                 self.corridors.append(tile + current_direction)
@@ -357,7 +359,7 @@ class Dungeon:
             neighbors = Direction.every()
         for direction in neighbors:
             new_point = point + direction
-            if not self.dungeon.in_bounds(new_point):
+            if not self.game_map.in_bounds(new_point):
                 continue
             yield new_point
 
@@ -373,11 +375,11 @@ class Dungeon:
 
     # def clear_map(self):
     #     """
-    #     Clears map by setting rooms to an empty list and calling dungeon.clear_dungeon()
+    #     Clears map by setting rooms to an empty list and calling game_map.clear_dungeon()
     #     """
     #     self.rooms = []
     #
-    #     self.dungeon.clear_dungeon()
+    #     self.game_map.clear_dungeon()
 
     def can_carve(self, pos: Point, direction: Point) -> bool:
 
@@ -400,22 +402,20 @@ class Dungeon:
     def carve(self, point: Point, region: int, label: TileType = TileType.FLOOR):
 
         tile = Tile.from_label(point, label)
-        self.dungeon.place(point, tile, region)
+        self.game_map.place(point, tile, region)
 
     def build_corridors(self, start_point: Point = None):
         cells = []
         if start_point is None:
             start_point = Point(
-                x=randint(1, self.width - 2),
-                y=randint(1, self.height - 2),
+                x=randint(1, self.width - 2), y=randint(1, self.height - 2)
             )
             # TODO: refactor can_carve
         attempts = 0
         while not self.can_carve(start_point, Direction.self()):
             attempts += 1
             start_point = Point(
-                x=randint(1, self.width - 2),
-                y=randint(1, self.height - 2),
+                x=randint(1, self.width - 2), y=randint(1, self.height - 2)
             )
             # TODO: need to remove this hard stop once everything is combined
             if attempts > 100:
@@ -480,8 +480,7 @@ class Dungeon:
 
     def random_point(self) -> Point:
         return Point(
-            x=randint(0, self.dungeon.width),
-            y=randint(0, self.dungeon.height),
+            x=randint(0, self.game_map.width), y=randint(0, self.game_map.height)
         )
 
     def build_dungeon(self):
@@ -494,7 +493,7 @@ class Dungeon:
         for y in range(1, self.height - 1):
             for x in range(1, self.width - 1):
                 point = Point(x, y)
-                if self.dungeon.label(point) != TileType.WALL.value:
+                if self.game_map.label(point) != TileType.WALL.value:
                     continue
                 self.grow_maze(point)
 
@@ -508,7 +507,7 @@ class Dungeon:
                 touching = 0
                 for xi in range(-distance, distance):
                     for yi in range(-distance, distance):
-                        if self.dungeon.label(Point(x + xi, y + yi)):
+                        if self.game_map.label(Point(x + xi, y + yi)):
                             touching += 1
                 if touching == 0:
                     print(f"returning {Point(x, y)}")
@@ -540,40 +539,40 @@ class Dungeon:
     def place_tile(self, point: Point, label: TileType, region: int):
         tile = Tile.from_label(point, label)
         x, y = point
-        self.dungeon.label_grid[x, y] = label.value
-        self.dungeon.walkable[x, y] = tile.walkable
-        self.dungeon.transparent[x, y] = tile.transparent
-        self.dungeon.region_grid[x, y] = region
+        self.game_map.label_grid[x, y] = label.value
+        self.game_map.walkable[x, y] = tile.walkable
+        self.game_map.transparent[x, y] = tile.transparent
+        self.game_map.region_grid[x, y] = region
 
     @logger.catch()
     def can_place(self, point: Point, direction: Point) -> bool:
         top_left, bottom_right = self.get_extents(point, direction)
 
         return (
-            self.dungeon.in_bounds(top_left)
-            and self.dungeon.in_bounds(bottom_right)
+            self.game_map.in_bounds(top_left)
+            and self.game_map.in_bounds(bottom_right)
             and self.are_walls(top_left, bottom_right)
         )
 
     def are_walls(self, top_left, bottom_right):
         for x in range(top_left.x, bottom_right.x + 1):
             for y in range(bottom_right.y, top_left.y + 1):
-                if self.dungeon.label_grid[x, y] != 0:
+                if self.game_map.label_grid[x, y] != 0:
                     return False
         return True
 
     def find_connectors(self):
         connector_regions = dict()
-        for point, tile in self.dungeon:
+        for point, tile in self.game_map:
             if tile.label != TileType.WALL:
                 continue
 
             regions = set()
 
             for neighbor in [point.N, point.E, point.W, point.S]:
-                if not self.dungeon.in_bounds(neighbor):
+                if not self.game_map.in_bounds(neighbor):
                     continue
-                region = self.dungeon.region(neighbor)
+                region = self.game_map.region(neighbor)
                 if region > -1:
                     regions.add(region)
 
@@ -607,15 +606,15 @@ class Dungeon:
 
         while all_connectors:
 
-            neighbors = [
-                n for r in g.merged_regions for n in g.find_neighbors(r)
-            ]
+            neighbors = [n for r in g.merged_regions for n in g.find_neighbors(r)]
 
             # choose random neighbor
             neighbor = choice(neighbors)
             # get connecting points between merged regions and neighbor
             poss_connections = [
-                point for r in g.merged_regions for point in regions_connectors[(min(r, neighbor), max(r, neighbor))]
+                point
+                for r in g.merged_regions
+                for point in regions_connectors[(min(r, neighbor), max(r, neighbor))]
             ]
             # choose random connecting point
             if poss_connections:
@@ -648,9 +647,7 @@ class Dungeon:
                 else:
                     print(f"failed to remove {p} from all_connectors")
 
-        joined_regions = {
-            c for c in g.find_connections(start_region)
-        }
+        joined_regions = {c for c in g.find_connections(start_region)}
 
         if len(joined_regions) != self.current_region + 1:
             print(f"current_region = {self.current_region}")
@@ -721,7 +718,7 @@ class Dungeon:
         return dead_ends
 
     def is_blocked(self, point: Point) -> bool:
-        if self.dungeon.blocked(point):
+        if self.game_map.blocked(point):
             return True
 
         return False
@@ -739,12 +736,82 @@ class Dungeon:
                 y = randint(room.top, room.bottom)
                 point = Point(x, y)
 
-                if not any([entity for entity in self.entities if entity.position == point]):
+                if not any(
+                    [entity for entity in self.entities if entity.position == point]
+                ):
                     if randint(0, 100) < 80:
-                        monster = Entity(name="goblin", position=point, char=Tiles.GOBLIN, blocks=True)
+                        fighter_component = Fighter(hp=10, defense=0, power=3)
+                        ai_component = BasicMonster()
+                        graphics_component = Graphics(
+                            char=Tiles.GOBLIN, layer=Layers.PLAYER
+                        )
+                        monster = Entity(
+                            name="goblin",
+                            position=point,
+                            char=Tiles.GOBLIN,
+                            blocks=True,
+                            fighter=fighter_component,
+                            ai=ai_component,
+                            graphics=graphics_component,
+                        )
                     else:
-                        monster = Entity(name="orc", position=point, char=Tiles.ORC, blocks=True)
+                        ai_component = BasicMonster()
+                        fighter_component = Fighter(hp=16, defense=1, power=4)
+                        graphics_component = Graphics(
+                            char=Tiles.ORC, layer=Layers.PLAYER
+                        )
+                        monster = Entity(
+                            name="orc",
+                            position=point,
+                            char=Tiles.ORC,
+                            blocks=True,
+                            fighter=fighter_component,
+                            ai=ai_component,
+                            graphics=graphics_component,
+                        )
 
                     self.entities.append(monster)
 
         return self.entities
+
+    def maps(self, position: Point, width: int, height: int) -> dict:
+        x1, y1 = position
+        x2 = position.x + width
+        y2 = position.y + height
+        fov_map = self.game_map.fov[x1:x2, y1:y2]
+        tile_map = np.array((height, width))
+        # for y in range()
+        return {}
+
+    def tile_map(self, x1: int, y1: int, width: int, height: int):
+        for y in range(y1, y1 + height):
+            for x in range(x1, x1 + width):
+                yield Point(x, y), self.tile(x, y)
+
+    def render_game_map(self, camera: Rect):
+        for row, y in enumerate(range(camera.y, camera.bottom)):
+            for col, x in enumerate(range(camera.x, camera.right)):
+                if y < 0 or self.height <= y or x < 0 or self.width <= x:
+                    # put blank tile
+                    continue
+                tile = self.tile(x, y)
+
+                if tile.explored:
+                    color = "gray"
+                    char = tile.char
+                else:
+                    color = "black"
+                    char = Tiles.UNSEEN
+
+                if tile.visible:
+                    color = "white"
+                    self.game_map.explore(tile.position)
+
+                blt.puts(col, row, f"[color={color}]{char}[/color]")
+
+    def can_see(self, entity: Entity, view: Rect) -> bool:
+        if view.left <= entity.x <= view.right and view.top <= entity.y <= view.bottom:
+            if self.game_map.in_fov(entity.position):
+                return True
+        else:
+            return False

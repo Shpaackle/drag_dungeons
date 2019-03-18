@@ -67,14 +67,14 @@ class Layers:
 
 
 class Tiles:
-    UNSEEN = "\uE004"
-    FLOOR = "\uE000"
-    CORRIDOR = "\uE001"
-    WALL = "\uE002"
+    UNSEEN = "\uE000"
+    FLOOR = "\uE0D3"
+    CORRIDOR = "\uE1EA"
+    WALL = "\uE10A"
     CONNECT = "\uE003"
-    DOOR_CLOSED = "\uE005"
+    DOOR_CLOSED = "\uE064"
     BLOCK = "\u2588"
-    DOOR_OPEN = "\uE006"
-    GOBLIN = "\uE007"
-    ORC = "\uE008"
-    PLAYER = "\uE009"
+    DOOR_OPEN = "\uE073"
+    GOBLIN = "\uEF01"
+    ORC = "\uEF5B"
+    PLAYER = "\uF404"

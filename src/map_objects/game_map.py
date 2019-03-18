@@ -1,10 +1,10 @@
+from typing import Dict
+
 import numpy
-from loguru import logger
 from tcod.map import Map
-from typing import Dict, Tuple, Iterable, List
 
 from map_objects.point import Point
-from map_objects.tile import Tile, TileType
+from map_objects.tile import Tile
 
 Grids = Dict[str, int]
 
@@ -29,7 +29,13 @@ class GameMap(Map):
         return range(self.width)
 
     def in_fov(self, point: Point) -> bool:
-        return self.fov[point.x, point.y]
+        try:
+            return self.fov[point.x, point.y]
+        except IndexError:
+            print(f"point {point} outside of fov_grid")
+            print(f"height = {self.height}, width = {self.width}")
+            print(f"fov grid_shape = {self.fov.shape}")
+            return True
 
     def blocked(self, point: Point) -> bool:
         return not self.walkable[point.x, point.y]
