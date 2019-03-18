@@ -87,4 +87,4 @@ class Rect:
         self.position = Point(x, y)
 
     def in_bounds(self, point: Point) -> bool:
-        return 0 <= point.x < self.width and 0 <= point.y < self.height
+        return self.left <= point.x <= self.right and self.top <= point.y < self.bottom
