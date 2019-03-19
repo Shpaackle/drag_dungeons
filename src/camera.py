@@ -38,10 +38,12 @@ class Camera(Rect):
                 yield j, i, Point(x=self.x + j, y=self.y + i)
 
     @property
-    def view(self) -> Dict[Point, Point]:
+    def view_offset(self) -> Dict[Point, Point]:
         view = {}
-        for x, y, point in iter(self):
-            view[point] = Point(x, y)
+        for y in range(self.height):
+            for x in range(self.width):
+                point = Point(self.x + x, self.y + y)
+                view[point] = Point(x, y)
 
         return view
 

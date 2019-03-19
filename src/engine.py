@@ -130,7 +130,7 @@ class Engine:
         if move and current_state == GameStates.PLAYER_TURN:
             point = self.player.position + move
             if not self.dungeon.is_blocked(point):
-                target = blocking_entities(self.entity_locations, point)
+                target = self.dungeon.entities[point.x, point.y]
 
                 if target:
                     print(f"You kick the {target} in the shins, much to its annoyance!")
@@ -172,6 +172,7 @@ class Engine:
         #     height=min(self.camera.height, self.dungeon.height))
 
         render_all(
+            player=self.player,
             entities=self.entities,
             fov_update=self.fov_update,
             camera=self.camera,
@@ -220,6 +221,7 @@ class Engine:
                     graphics=Graphics(char=Tiles.GOBLIN, layer=Layers.PLAYER)
                 )
                 self._entities[point].append(monster)
+                self.dungeon.place_entity(monster)
 
                 point = room.top_right
                 monster = Entity(
@@ -232,6 +234,7 @@ class Engine:
                     graphics=Graphics(char=Tiles.GOBLIN, layer=Layers.PLAYER)
                 )
                 self._entities[point].append(monster)
+                self.dungeon.place_entity(monster)
 
                 point = room.bottom_right
                 monster = Entity(
@@ -244,6 +247,7 @@ class Engine:
                     graphics=Graphics(char=Tiles.GOBLIN, layer=Layers.PLAYER)
                 )
                 self._entities[point].append(monster)
+                self.dungeon.place_entity(monster)
 
                 continue
 
@@ -275,6 +279,7 @@ class Engine:
                         )
 
                     self._entities[point].append(monster)
+                    self.dungeon.place_entity(monster)
 
 
 def main():

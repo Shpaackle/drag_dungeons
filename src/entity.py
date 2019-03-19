@@ -51,9 +51,10 @@ class Entity:
         return self.position.y
 
     def move(self, direction: Point):
+        print(f"{self} is moving {direction}")
         self.position += direction
 
-    def move_towards(self, target_point, game_map, entity_locations):
+    def move_towards(self, target_point, game_map, entity_locations, dungeon):
         dx, dy = target_point - self.position
         distance = target_point.distance(self.position)
 
@@ -62,11 +63,16 @@ class Entity:
 
         point = Point(self.x + dx, self.y + dy)
 
-        if not (game_map.blocked(point) or blocking_entities(entity_locations, point)):
-            self.move(point)
+        if not (dungeon.blocked(point) or dungeon.entities[point.x, point.y]):
+            old_position = self.position
+            self.move(Point(dx, dy))
+            dungeon.move_entity(entity=self, old_position=old_position, new_position=self.position)
+
+        # if not (game_map.blocked(point) or blocking_entities(entity_locations, point)):
+        #     self.move(Point(dx, dy))
 
 
-def blocking_entities(entity_locations: Dict[Point, List[Entity]], point: Point) -> Optional[Entity]:
+def blocking_entities(entity_locations: Dict[Point, List[Entity]], point: Point, dungeon) -> Optional[Entity]:
     entities = entity_locations.get(point, [])
     for entity in entities:
         if entity.blocks:

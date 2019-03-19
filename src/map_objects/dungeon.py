@@ -139,7 +139,7 @@ class Dungeon:
         self.connector_regions = None
         self.joined_regions = None
 
-        self.entities = None
+        # self.entities = None
 
     @property
     def starting_position(self) -> Point:
@@ -814,8 +814,23 @@ class Dungeon:
                 blt.puts(col, row, f"[color={color}]{char}[/color]")
 
     def can_see(self, entity: Entity, view: Rect) -> bool:
-        if view.in_bounds(entity.position):
-            if self.game_map.in_fov(entity.position):
-                return True
+        if self.game_map.in_fov(entity.position):
+            return True
         else:
             return False
+
+    def place_entity(self, entity: Entity):
+        if not self.entities[entity.x, entity.y]:
+            self.entities[entity.x, entity.y] = entity
+
+    def move_entity(self, entity: Entity, old_position: Point, new_position: Point):
+        self.entities[old_position.x, old_position.y] = 0
+        assert new_position == entity.position
+        self.entities[new_position.x, new_position.y] = entity
+
+    @property
+    def entities(self) -> np.array:
+        return self.game_map.entity_grid.T if self.game_map.order == "F" else self.game_map.entity_grid
+
+    def blocked(self, point) -> bool:
+        return self.game_map.blocked(point)

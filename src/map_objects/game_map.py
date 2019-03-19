@@ -12,13 +12,15 @@ Grids = Dict[str, int]
 class GameMap(Map):
     def __init__(self, height: int, width: int):
         super(GameMap, self).__init__(width=width, height=height, order="F")
-        self.height: int = height
-        self.width: int = width
+        # self.height: int = height
+        # self.width: int = width
 
         self.label_grid = numpy.full_like(self.walkable, 0, dtype=numpy.int)
         self.region_grid = numpy.full_like(self.walkable, -1, dtype=numpy.int)
 
         self.explored_grid = numpy.full_like(self.walkable, False, dtype=numpy.bool)
+
+        self.entity_grid = numpy.zeros(shape=(height, width), dtype=numpy.object)
 
     @property
     def rows(self):
@@ -116,3 +118,11 @@ class GameMap(Map):
         """
         if not self.explored(point):
             self.explored_grid[point.x, point.y] = True
+
+    # @property
+    # def entities(self) -> numpy.array:
+    #     return self.entity_grid.T if self._order == "F" else self.entity_grid
+
+    @property
+    def order(self):
+        return self._order
