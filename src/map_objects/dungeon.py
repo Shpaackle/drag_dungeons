@@ -799,6 +799,7 @@ class Dungeon:
                 if test:
                     blt.color("white")
                     blt.put(col, row, tile.char)
+                    continue
 
                 if tile.explored:
                     color = "gray"

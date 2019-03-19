@@ -285,7 +285,8 @@ class Engine:
 def main():
     # engine = Engine(random_seed="TEST_MAP")
     engine = Engine()
-    engine.initialize(test=True)
+    test = False
+    engine.initialize(test=test)
 
     engine.fov_update = True
     engine.update()
@@ -294,7 +295,7 @@ def main():
     while not engine.current_state == GameStates.EXIT:
         engine.handle_input()
         engine.update()
-        engine.render(test=True)
+        engine.render(test=test)
 
 
 if __name__ == "__main__":
