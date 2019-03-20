@@ -51,7 +51,7 @@ class Entity:
         return self.position.y
 
     def move(self, direction: Point):
-        print(f"{self} is moving {direction}")
+        # print(f"{self} is moving {direction}")
         self.position += direction
 
     def move_towards(self, target_point, game_map, entity_locations, dungeon):

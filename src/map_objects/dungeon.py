@@ -816,6 +816,7 @@ class Dungeon:
 
     def can_see(self, entity: Entity, view: Rect) -> bool:
         if self.game_map.in_fov(entity.position):
+            print(f"{entity} is at {entity.position}, can see")
             return True
         else:
             return False
