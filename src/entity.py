@@ -1,6 +1,11 @@
 from typing import List, Optional, Dict
 
+from bearlibterminal import terminal as blt
+import tcod.path
+
+from const import Layers
 from map_objects import Point
+from map_objects.a_star import find_path
 
 
 class Entity:
@@ -29,6 +34,7 @@ class Entity:
         self.fighter = fighter
         self.ai = ai
         self.graphics = graphics
+        self.layer = Layers.PLAYER
 
         if self.fighter:
             self.fighter.owner = self
@@ -63,13 +69,33 @@ class Entity:
 
         point = Point(self.x + dx, self.y + dy)
 
-        if not (dungeon.blocked(point) or dungeon.entities[point.x, point.y]):
+        blocked = dungeon.blocked(point)
+        for entity in dungeon.entities:
+            if entity.position == point:
+                blocked = entity.blocks
+
+        if not blocked:
             old_position = self.position
             self.move(Point(dx, dy))
-            dungeon.move_entity(entity=self, old_position=old_position, new_position=self.position)
+            # dungeon.move_entity(entity=self, old_position=old_position, new_position=self.position)
 
         # if not (game_map.blocked(point) or blocking_entities(entity_locations, point)):
         #     self.move(Point(dx, dy))
+
+    def move_a_star(self, target, dungeon, entity_locations):
+        # walkable = dungeon.game_map.walkable
+        # for entity in dungeon.entities:
+        #     if entity.blocks:
+        #         walkable[entity.x, entity.y] = False
+        astar = tcod.path.AStar(dungeon.path_blocking)
+        path = astar.get_path(self.x, self.y, target.x, target.y)
+        if path and len(path) < 25:
+            destination = path[0]
+            direction = Point(destination[0], destination[1]) - self.position
+            self.move(direction)
+            # dungeon.move_entity(entity=self, old_position=old_position, new_position=self.position)
+        else:
+            self.move_towards(target.position, entity_locations=entity_locations, dungeon=dungeon, game_map=dungeon.game_map)
 
 
 def blocking_entities(entity_locations: Dict[Point, List[Entity]], point: Point, dungeon) -> Optional[Entity]:

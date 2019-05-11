@@ -61,8 +61,10 @@ COLORS = {
 class Layers:
     BACKGROUND = 0
     MAP = 10
+    ITEMS = 15
     PLAYER = 20
     LIGHT = 40
+    UI = 45
     TESTING = 50
 
 

@@ -139,7 +139,15 @@ class Dungeon:
         self.connector_regions = None
         self.joined_regions = None
 
-        # self.entities = None
+        self._entities = []
+
+    @property
+    def entities(self) -> List[Entity]:
+        return self._entities
+
+    @entities.setter
+    def entities(self, value: Entity):
+        self._entities.append(value)
 
     @property
     def starting_position(self) -> Point:
@@ -742,9 +750,6 @@ class Dungeon:
                     if randint(0, 100) < 80:
                         fighter_component = Fighter(hp=10, defense=0, power=3)
                         ai_component = BasicMonster()
-                        graphics_component = Graphics(
-                            char=Tiles.GOBLIN, layer=Layers.PLAYER
-                        )
                         monster = Entity(
                             name="goblin",
                             position=point,
@@ -752,14 +757,11 @@ class Dungeon:
                             blocks=True,
                             fighter=fighter_component,
                             ai=ai_component,
-                            graphics=graphics_component,
+                            graphics=Graphics(),
                         )
                     else:
                         ai_component = BasicMonster()
                         fighter_component = Fighter(hp=16, defense=1, power=4)
-                        graphics_component = Graphics(
-                            char=Tiles.ORC, layer=Layers.PLAYER
-                        )
                         monster = Entity(
                             name="orc",
                             position=point,
@@ -767,39 +769,25 @@ class Dungeon:
                             blocks=True,
                             fighter=fighter_component,
                             ai=ai_component,
-                            graphics=graphics_component,
+                            graphics=Graphics(),
                         )
 
                     self.entities.append(monster)
 
         return self.entities
 
-    def maps(self, position: Point, width: int, height: int) -> dict:
-        x1, y1 = position
-        x2 = position.x + width
-        y2 = position.y + height
-        fov_map = self.game_map.fov[x1:x2, y1:y2]
-        tile_map = np.array((height, width))
-        # for y in range()
-        return {}
-
     def tile_map(self, x1: int, y1: int, width: int, height: int):
         for y in range(y1, y1 + height):
             for x in range(x1, x1 + width):
                 yield Point(x, y), self.tile(x, y)
 
-    def render_game_map(self, camera: Rect, test=False):
+    def render_game_map(self, camera: Rect):
         for row, y in enumerate(range(camera.y, camera.bottom)):
             for col, x in enumerate(range(camera.x, camera.right)):
                 if y < 0 or self.height <= y or x < 0 or self.width <= x:
                     # put blank tile
                     continue
                 tile = self.tile(x, y)
-
-                if test:
-                    blt.color("white")
-                    blt.put(col, row, tile.char)
-                    continue
 
                 if tile.explored:
                     color = "gray"
@@ -815,24 +803,32 @@ class Dungeon:
                 blt.puts(col, row, f"[color={color}]{char}[/color]")
 
     def can_see(self, entity: Entity, view: Rect) -> bool:
+        if not (view.left <= entity.x <= view.right and view.top <= entity.y <= view.bottom):
+            return False
         if self.game_map.in_fov(entity.position):
-            print(f"{entity} is at {entity.position}, can see")
             return True
         else:
             return False
 
     def place_entity(self, entity: Entity):
-        if not self.entities[entity.x, entity.y]:
-            self.entities[entity.x, entity.y] = entity
-
-    def move_entity(self, entity: Entity, old_position: Point, new_position: Point):
-        self.entities[old_position.x, old_position.y] = 0
-        assert new_position == entity.position
-        self.entities[new_position.x, new_position.y] = entity
-
-    @property
-    def entities(self) -> np.array:
-        return self.game_map.entity_grid.T if self.game_map.order == "F" else self.game_map.entity_grid
+        if entity not in self.entities:
+            self.entities.append(entity)
 
     def blocked(self, point) -> bool:
         return self.game_map.blocked(point)
+
+    @property
+    def path_blocking(self):
+        blocked = self.game_map.walkable.copy()
+        for entity in self.entities:
+            blocked[entity.x, entity.y] = False
+        return blocked
+
+    @property
+    def location_entities(self) -> Dict[Point, List[Entity]]:
+        """ returns a dictionary of entities at a particular point"""
+        location_entities: Dict[Point, List[Entity]] = defaultdict(list)
+        for entity in self.entities:
+            point = entity.position
+            location_entities[point].append(entity)
+        return location_entities

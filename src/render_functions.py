@@ -6,11 +6,11 @@ from entity import Entity
 from map_objects import GameMap, Dungeon, Point
 
 
-def render_all(player, entities, fov_update: bool, camera: Camera, dungeon: Dungeon, test=False):
+def render_all(player, entities, fov_update: bool, camera: Camera, dungeon: Dungeon):
     if fov_update:
         terminal.clear()
         terminal.layer(Layers.MAP)
-        dungeon.render_game_map(camera, test=test)
+        dungeon.render_game_map(camera)
 
     # e_grid = dungeon.entities[camera.left:camera.right, camera.top:camera.bottom]
 
@@ -22,30 +22,11 @@ def render_all(player, entities, fov_update: bool, camera: Camera, dungeon: Dung
                 point = entity.position - camera.top_left
                 entity.graphics.render(point)
 
-    # for col in range(camera.height):
-    #     for row in range(camera.width):
-    #         try:
-    #             entity = e_grid[row, col]
-    #         except IndexError:
-    #             print(f"Index error {row, col}")
-    #             continue
-    #         if entity:
-    #             if dungeon.can_see(entity, view=camera):
-    #                 point = entity.position - camera.top_left
-    #                 print(f"{entity} at {entity.position} is at terminal {point}")
-    #                 entity.graphics.render(entity.position - camera.top_left)
-    #             terminal.puts(entity.x - camera.x, entity.y - camera.y, f"[color=red][layer=30] [/color][/layer]")
-    #             # else:
-                #     print(f"{entity} at {entity.position} did not get drawn")
-
-    # for entity in iter(entities):
-    #     if dungeon.can_see(entity=entity, view=camera):
-    #         point = entity.position - camera.top_left
-    #         entity.graphics.render(point)
+    # terminal.printf(0, 20, f"[layer={Layers.UI}]testing messages")
 
 
 def clear_entity(entity):
-    terminal.puts(entity.x, entity.y, f"[layer={Layers.PLAYER}][color=white] [/color]")
+    terminal.puts(entity.x, entity.y, f"[layer={entity.layer}][color=white] [/color]")
 
 
 def clear_all(entities):

@@ -1,20 +1,24 @@
+
+# stdlib
 import random
 from collections import defaultdict
 from datetime import datetime
 from typing import List, Dict
 
-from bearlibterminal import terminal
+# pip installed
+from bearlibterminal import terminal as blt
 
-from const import Tiles, MAP_SETTINGS, Layers
+# app modules
 from camera import Camera
-
 from components import Fighter, Graphics, BasicMonster
+from const import Tiles, MAP_SETTINGS, Layers, CAMERA_HEIGHT, CAMERA_WIDTH
+from death_functions import kill_monster, kill_player
 from entity import Entity, blocking_entities
 from fov_functions import initialize_fov, update_fov
-from handle_keys import handle_keys
-from render_functions import render_all, clear_all
-from map_objects import Dungeon, Point, GameMap, Room, TileType
 from game_states import GameStates
+from handle_keys import handle_keys
+from map_objects import Dungeon, Point, GameMap, Room, TileType
+from render_functions import render_all, clear_all
 
 
 class Engine:
@@ -29,7 +33,6 @@ class Engine:
         self.previous_state = None
         self.player: Entity = None
         self._entities: Dict[Point, List[Entity]] = defaultdict(list)
-        self.random_seed = None
         self.camera: Camera = None
         self._fov_update: bool = False
         self.action = {}
@@ -47,47 +50,10 @@ class Engine:
         random.seed(self.random_seed)
         print(self.random_seed)
 
-        if test:
-            map_settings = {
-                "map_height": 15,
-                "map_width": 21,
-                "tile_size": 10,
-                "num_rooms": 100,
-                "min_room_size": 3,
-                "max_room_size": 7,
-                "room_margin": 1,
-                "extra_door_chance": 30,
-                "max_monsters_per_room": 3
-            }
-            self.dungeon = Dungeon(map_settings)
-            self.dungeon.place_room(2, 2, 7, 9, 1)
-            self.dungeon.place_room(14, 6, 5, 7, 1)
-            for i in range(7):
-                self.dungeon.place_tile(Point(9+i, 8), TileType.FLOOR, 2)
-            # self.dungeon.place_tile(Point(9, 8), TileType.FLOOR, region=2)
-        else:
-            self.dungeon = Dungeon(MAP_SETTINGS)
-            self.dungeon.build_dungeon()
+        self.dungeon = Dungeon(MAP_SETTINGS)
+        self.dungeon.build_dungeon()
 
-        fighter_component = Fighter(hp=30, defense=2, power=5)
-        graphics_component = Graphics(
-            color="white", char=Tiles.PLAYER, layer=Layers.PLAYER
-        )
-        player = Entity(
-            name="Player",
-            position=self.dungeon.starting_position,
-            char=Tiles.PLAYER,
-            color="white",
-            blocks=True,
-            fighter=fighter_component,
-            graphics=graphics_component,
-        )
-        # entities = self.game_map.place_entities(player)
-
-        # self.player: Entity = player
-        # self._entities: List[Entity] = entities
-
-        self.place_entities(test=test)
+        self.place_entities()
 
         self.camera = Camera(player=self.player)
 
@@ -109,8 +75,8 @@ class Engine:
 
     def handle_input(self):
         key = None
-        if terminal.has_input():
-            key = terminal.read()
+        if blt.has_input():
+            key = blt.read()
 
         action = handle_keys(key)
 
@@ -127,14 +93,21 @@ class Engine:
 
         move = self.action.get("move")
 
+        player_turn_results = []
+
         if move and current_state == GameStates.PLAYER_TURN:
             point = self.player.position + move
             if not self.dungeon.is_blocked(point):
-                target = self.dungeon.entities[point.x, point.y]
+                entities = self.dungeon.location_entities.get(point, [])
 
+                target = None
+                for entity in entities:
+                    if entity.blocks:
+                        target = entity
                 if target:
-                    print(f"You kick the {target} in the shins, much to its annoyance!")
-
+                    # print(f"You kick the {target} in the shins, much to its annoyance!")
+                    attack_results = self.player.fighter.attack(target)
+                    player_turn_results.extend(attack_results)
                 else:
                     self.player.move(move)
                     self.camera.recenter(self.player.position)
@@ -144,23 +117,62 @@ class Engine:
                 self.previous_state = current_state
                 self.current_state = GameStates.ENEMY_TURN
 
+        for player_turn_result in player_turn_results:
+            message = player_turn_result.get("message")
+            dead_entity: Entity = player_turn_result.get("dead")
+
+            if message:
+                print(message)
+
+            if dead_entity:
+                if dead_entity == self.player:
+                    message, game_state = kill_player(dead_entity)
+                else:
+                    # self.dungeon.location_entities.pop(dead_entity.position)
+                    message = kill_monster(dead_entity)
+
+                print(message)
+
         if current_state == GameStates.ENEMY_TURN:
             # entity: Entity
             for entity in iter(self.entities):
                 if entity.ai:
                     if self.dungeon.can_see(entity=entity, view=self.camera):
-                        entity.ai.take_turn(target=self.player, dungeon=self.dungeon, entity_locations=self.entity_locations)
-                # print(f"The {entity} ponders the meaning of its existence.")
+                        enemy_turn_results = entity.ai.take_turn(target=self.player, dungeon=self.dungeon, entity_locations=self.entity_locations)
 
-            self.previous_state = current_state
-            self.current_state = GameStates.PLAYER_TURN
+                        for enemy_turn_result in enemy_turn_results:
+                            message = enemy_turn_result.get("message")
+                            dead_entity = enemy_turn_result.get("dead")
+
+                            if message:
+                                print(message)
+                            if dead_entity:
+                                if dead_entity == self.player:
+                                    message, game_state = kill_player(dead_entity)
+                                else:
+                                    message = kill_monster(dead_entity)
+                                    # self.dungeon.location_entities.pop(dead_entity.position)
+                                    game_state = None
+
+                                print(message)
+
+                                if game_state == GameStates.PLAYER_DEAD:
+                                    self.previous_state = current_state
+                                    self.current_state = game_state
+                                    break
+                        if self.current_state == GameStates.PLAYER_DEAD:
+                            break
+                # print(f"The {entity} ponders the meaning of its existence.")
+            else:
+                self.previous_state = current_state
+                self.current_state = GameStates.PLAYER_TURN
 
         if self.fov_update:
             update_fov(self.game_map, self.player.position)
             # game_map = self.dungeon.maps(self.camera.position, self.camera.width, self.camera.height)
             # self.game_map = game_map
 
-    def render(self, test=False):
+    def render(self):
         # x = max(self.camera.x, 0)
         # y = max(self.camera.y, 0)
         # x2 = min(x1 + self.camera.width, self.dungeon.width - 1)
@@ -176,17 +188,16 @@ class Engine:
             entities=self.entities,
             fov_update=self.fov_update,
             camera=self.camera,
-            dungeon=self.dungeon,
-            test=test
+            dungeon=self.dungeon
         )
-        terminal.refresh()
+        blt.refresh()
         clear_all(self.entities)
 
     @property
     def entity_locations(self):
         return self._entities
 
-    def place_entities(self, test=False):
+    def place_entities(self):
         max_monsters_per_room = MAP_SETTINGS["max_monsters_per_room"]
 
         rooms = self.dungeon.rooms
@@ -198,57 +209,15 @@ class Engine:
             char=Tiles.PLAYER,
             color="white",
             blocks=True,
-            fighter=Fighter(hp=30, defense=2, power=5),
-            graphics=Graphics(char=Tiles.PLAYER, layer=Layers.PLAYER),
+            fighter=Fighter(hp=100, defense=8, power=10),
+            graphics=Graphics(),
         )
         self.player = player
 
         entities = {}
 
-        for room in rooms:
+        for room in iter(rooms):
             if room == starting_room:
-                continue
-
-            if test:
-                point = room.top_left
-                monster = Entity(
-                    name="goblin",
-                    position=point,
-                    char=Tiles.GOBLIN,
-                    blocks=True,
-                    fighter=Fighter(hp=16, defense=1, power=4),
-                    ai=BasicMonster(),
-                    graphics=Graphics(char=Tiles.GOBLIN, layer=Layers.PLAYER)
-                )
-                self._entities[point].append(monster)
-                self.dungeon.place_entity(monster)
-
-                point = room.top_right
-                monster = Entity(
-                    name="goblin",
-                    position=point,
-                    char=Tiles.GOBLIN,
-                    blocks=True,
-                    fighter=Fighter(hp=16, defense=1, power=4),
-                    ai=BasicMonster(),
-                    graphics=Graphics(char=Tiles.GOBLIN, layer=Layers.PLAYER)
-                )
-                self._entities[point].append(monster)
-                self.dungeon.place_entity(monster)
-
-                point = room.bottom_right
-                monster = Entity(
-                    name="goblin",
-                    position=point,
-                    char=Tiles.GOBLIN,
-                    blocks=True,
-                    fighter=Fighter(hp=16, defense=1, power=4),
-                    ai=BasicMonster(),
-                    graphics=Graphics(char=Tiles.GOBLIN, layer=Layers.PLAYER)
-                )
-                self._entities[point].append(monster)
-                self.dungeon.place_entity(monster)
-
                 continue
 
             for i in range(random.randrange(max_monsters_per_room)):
@@ -265,28 +234,34 @@ class Engine:
                             blocks=True,
                             fighter=Fighter(hp=16, defense=1, power=4),
                             ai=BasicMonster(),
-                            graphics=Graphics(char=Tiles.GOBLIN, layer=Layers.PLAYER)
+                            graphics=Graphics()
                         )
                     else:
                         monster = Entity(
-                            name="goblin",
+                            name="orc",
                             position=point,
                             char=Tiles.ORC,
                             blocks=True,
                             fighter=Fighter(hp=16, defense=1, power=4),
                             ai=BasicMonster(),
-                            graphics=Graphics(char=Tiles.ORC, layer=Layers.PLAYER)
+                            graphics=Graphics()
                         )
 
                     self._entities[point].append(monster)
                     self.dungeon.place_entity(monster)
 
+    def entities_at_location(self, point: Point) -> list:
+        entities = []
+        for entity in self.dungeon.entities:
+            if entity.position == point:
+                entities.append(entity)
+        return entities
+
 
 def main():
     # engine = Engine(random_seed="TEST_MAP")
     engine = Engine()
-    test = False
-    engine.initialize(test=test)
+    engine.initialize()
 
     engine.fov_update = True
     engine.update()
@@ -295,19 +270,20 @@ def main():
     while not engine.current_state == GameStates.EXIT:
         engine.handle_input()
         engine.update()
-        engine.render(test=test)
+        engine.render()
 
 
 if __name__ == "__main__":
-    terminal.open()
-    terminal.composition(True)
-    terminal.set("window: size=110x60, title='Drag Dungeons'")
-    terminal.set("font: data/mplus-1p-regular.ttf, size=32x32")
-    terminal.set("0xE000: data/ProjectUtumno_full.png, size=32x32")
+    blt.open()
+    blt.composition(True)
+    blt.set(f"window: size=31x21, cellsize=auto, title='Drag Dungeons'")
+    blt.set("font: data/mplus-1p-regular.ttf, size=32x32")
+    blt.set("interface font: data/mplus-1p-regular.ttf, size=8x16")
+    blt.set("0xE000: data/ProjectUtumno_full.png, size=32x32")
     # logger.add(
     #     "logs/build_maze_{time}.log",
     #     level="ERROR",
     #     format="{time:HH:mm:ss.SSS} {message}",
     # )
     main()
-    terminal.close()
+    blt.close()

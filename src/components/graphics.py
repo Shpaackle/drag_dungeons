@@ -1,15 +1,22 @@
 from bearlibterminal import terminal as blt
 
-from const import Layers, Tiles
-
 
 class Graphics:
-    def __init__(self, char: Tiles, layer: Layers, color: str = "white"):
-        self.color = color
-        self.char = char
-        self.layer = layer
-
+    def __init__(self):
         self.owner = None
 
     def render(self, point):
-        blt.puts(point.x, point.y, f"[layer={self.layer}][color={self.color}]{self.char}[/color]")
+        blt.layer(self.layer)
+        blt.puts(point.x, point.y, f"[color={self.color}]{self.char}[/color]")
+
+    @property
+    def layer(self):
+        return self.owner.layer
+
+    @property
+    def color(self):
+        return self.owner.color
+
+    @property
+    def char(self):
+        return self.owner.char

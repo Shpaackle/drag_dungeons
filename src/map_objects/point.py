@@ -1,19 +1,22 @@
 import math
+from collections import namedtuple
 from dataclasses import dataclass
 from enum import Enum
 
 
-# TODO: refactor this to class that uses Point?
-# class Direction(Enum):
-#     NW = (-1, 1)
-#     N = (0, 1)
-#     NE = (1, 1)
-#     W = (-1, 0)
-#     E = (1, 0)
-#     SW = (-1, -1)
-#     S = (0, -1)
-#     SE = (1, -1)
-#     ORIGIN = (0, 0)
+POINT = namedtuple("POINT", ["x", "y"],)
+
+
+class Direction(Enum):
+    NW = POINT(-1, 1)
+    N = POINT(0, 1)
+    NE = POINT(1, 1)
+    W = POINT(-1, 0)
+    E = POINT(1, 0)
+    SW = POINT(-1, -1)
+    S = POINT(0, -1)
+    SE = POINT(1, -1)
+    ORIGIN = POINT(0, 0)
 
 
 @dataclass(init=True, repr=True, eq=True, order=False, frozen=True)
@@ -100,15 +103,3 @@ class Point:
     def distance(self, p2):
         x, y = self - p2
         return math.sqrt(x ** 2 + y ** 2)
-
-
-class Direction(Enum):
-    NW = Point(-1, 1)
-    N = Point(0, 1)
-    NE = Point(1, 1)
-    W = Point(-1, 0)
-    E = Point(1, 0)
-    SW = Point(-1, -1)
-    S = Point(0, -1)
-    SE = Point(1, -1)
-    ORIGIN = Point(0, 0)
